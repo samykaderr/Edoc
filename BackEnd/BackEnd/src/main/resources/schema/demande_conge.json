@@ -9,7 +9,28 @@
     "properties": {
         "idEmploye": {
             "type": "integer",
-            "title": "Identifiant Employé"
+            "title": "Identifiant Employé",
+            "description": "Saisissez votre identifiant pour charger automatiquement vos informations."
+        },
+        "nomEmploye": {
+            "type": "string",
+            "title": "Nom de l'employé",
+            "minLength": 2,
+            "maxLength": 100,
+            "readOnly": true
+        },
+        "prenomEmploye": {
+            "type": "string",
+            "title": "Prénom de l'employé",
+            "minLength": 2,
+            "maxLength": 100,
+            "readOnly": true
+        },
+        "emailEmploye": {
+            "type": "string",
+            "format": "email",
+            "title": "Email de l'employé",
+            "readOnly": true
         },
         "dateDebut": {
             "type": "string",

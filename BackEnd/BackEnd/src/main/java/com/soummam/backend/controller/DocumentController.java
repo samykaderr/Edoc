@@ -3,6 +3,7 @@ package com.soummam.backend.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.soummam.backend.model.Conge;
 import com.soummam.backend.repository.CongeRepository;
+import com.soummam.backend.repository.EmployeRepository;
 import com.soummam.backend.service.JsonValidationService;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/documents")
@@ -22,11 +24,17 @@ public class DocumentController {
 
     private final JsonValidationService validationService;
     private final CongeRepository congeRepository;
+    private final EmployeRepository employeRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public DocumentController(JsonValidationService validationService, CongeRepository congeRepository) {
+    public DocumentController(
+            JsonValidationService validationService,
+            CongeRepository congeRepository,
+            EmployeRepository employeRepository
+    ) {
         this.validationService = validationService;
         this.congeRepository = congeRepository;
+        this.employeRepository = employeRepository;
     }
 
     public record DocumentTypeView(String code, String title, String description, String schemaName) {
@@ -69,27 +77,37 @@ public class DocumentController {
      * Endpoint : POST http://localhost:8080/api/documents/soumettre
      */
     @PostMapping("/soumettre")
-    public ResponseEntity<String> soumettreDocument(@RequestBody String jsonPayload) {
+    public ResponseEntity<?> soumettreDocument(@RequestBody String jsonPayload) {
         try {
-            // 1. Passer au moteur de validation
             validationService.validateDocument(jsonPayload);
 
-            // 2. Convertisseur JSON ==> Entité Java (comme sur votre schéma !)
             Conge conge = objectMapper.readValue(jsonPayload, Conge.class);
 
-            // Le statut "NEW" et la date sont gérés automatiquement par l'entité
-            // 3. Sauvegarde via JPA (remplit t_document et t_conge automatiquement)
+            if (conge.getIdEmploye() == null || !employeRepository.existsById(conge.getIdEmploye())) {
+                return ResponseEntity.badRequest()
+                        .body(Map.of("error", "Employé introuvable pour l'identifiant : " + conge.getIdEmploye()));
+            }
+
+            if (conge.getDateDebut() != null && conge.getDateFin() != null
+                    && conge.getDateFin().isBefore(conge.getDateDebut())) {
+                throw new IllegalArgumentException(
+                        "La date de fin doit être postérieure ou égale à la date de début."
+                );
+            }
+
             Conge savedConge = congeRepository.save(conge);
 
             return ResponseEntity.status(HttpStatus.CREATED)
-                    .body("{ \"message\": \"Document enregistré avec succès !\", \"id\": \"" + savedConge.getId() + "\" }");
+                    .body(Map.of(
+                            "message", "Document enregistré avec succès !",
+                            "id", savedConge.getId()
+                    ));
 
         } catch (IllegalArgumentException e) {
-            // Erreur de validation du schéma JSON (Ex: un champ requis est manquant)
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("{ \"error\": \"" + e.getMessage() + "\" }");
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
-            // Toute autre erreur technique
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("{ \"error\": \"Erreur interne : " + e.getMessage() + "\" }");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Erreur interne : " + e.getMessage()));
         }
     }
 }

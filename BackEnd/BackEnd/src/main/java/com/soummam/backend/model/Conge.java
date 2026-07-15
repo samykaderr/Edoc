@@ -12,7 +12,9 @@ public class Conge extends Document {
 
     private LocalDate dateDebut;
     private LocalDate dateFin;
+    private String typeConge;
     private String motif;
+    private String referenceMedicale;
 
     public LocalDate getDateDebut() {
         return dateDebut;
@@ -30,11 +32,27 @@ public class Conge extends Document {
         this.dateFin = dateFin;
     }
 
+    public String getTypeConge() {
+        return typeConge;
+    }
+
+    public void setTypeConge(String typeConge) {
+        this.typeConge = typeConge;
+    }
+
     public String getMotif() {
         return motif;
     }
 
     public void setMotif(String motif) {
         this.motif = motif;
+    }
+
+    public String getReferenceMedicale() {
+        return referenceMedicale;
+    }
+
+    public void setReferenceMedicale(String referenceMedicale) {
+        this.referenceMedicale = referenceMedicale;
     }
 }

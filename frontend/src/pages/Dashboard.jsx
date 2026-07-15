@@ -7,7 +7,7 @@ function Dashboard() {
   const navigate = useNavigate();
 
   const handleCardClick = (documentType) => {
-    navigate(`/view/${documentType.id ?? documentType.code}`);
+    navigate(`/view/${documentType.schemaName}`);
   };
 
   return (

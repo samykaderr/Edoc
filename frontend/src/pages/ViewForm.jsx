@@ -1,29 +1,31 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import api from '../services/api';
+import { getDocumentSchema, normalizeApiData, submitDocument } from '../services/api';
 import FormRenderer from '../components/FormRenderer';
 
 function ViewForm() {
-  const { id } = useParams();
-  const [documentType, setDocumentType] = useState(null);
+  const { schemaName } = useParams();
+  const [schema, setSchema] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [submitMessage, setSubmitMessage] = useState('');
 
   useEffect(() => {
     let isActive = true;
 
-    const loadDocumentType = async () => {
+    const loadSchema = async () => {
       try {
         setLoading(true);
         setError('');
-        const response = await api.get(`/documents/${id}`);
+        setSubmitMessage('');
+        const response = await getDocumentSchema(schemaName);
 
         if (isActive) {
-          setDocumentType(response.data);
+          setSchema(normalizeApiData(response.data));
         }
       } catch (err) {
         if (isActive) {
-          setError(err.message || 'Impossible de charger le formulaire');
+          setError(err.response?.data?.error || err.message || 'Impossible de charger le formulaire');
         }
       } finally {
         if (isActive) {
@@ -32,28 +34,33 @@ function ViewForm() {
       }
     };
 
-    loadDocumentType();
+    loadSchema();
 
     return () => {
       isActive = false;
     };
-  }, [id]);
+  }, [schemaName]);
 
-  const schema = documentType?.schema || documentType?.formSchema || documentType?.fields || documentType;
+  const handleSubmit = async (payload) => {
+    const response = await submitDocument(payload);
+    const responseData = normalizeApiData(response.data);
+    setSubmitMessage(responseData?.message || 'Document enregistré avec succès.');
+    return responseData;
+  };
 
   return (
     <main className="app-shell desktop-only">
       <section className="hero-panel view-form-header">
         <div className="hero-copy">
           <p className="eyebrow">Formulaire</p>
-          <h1>{documentType?.title || 'Consulter le formulaire'}</h1>
+          <h1>{schema?.title || 'Consulter le formulaire'}</h1>
           <p className="hero-text">
-            {documentType?.description || 'Chargement du formulaire associé au document sélectionné.'}
+            {schema?.description || 'Chargement du formulaire associé au document sélectionné.'}
           </p>
         </div>
         <div className="hero-status">
           <span className="status-dot" />
-          <span>{id}</span>
+          <span>{schemaName}</span>
         </div>
       </section>
 
@@ -63,7 +70,8 @@ function ViewForm() {
         <section className="state-card state-card-error">{error}</section>
       ) : (
         <section className="form-page-body">
-          <FormRenderer schema={schema} />
+          {submitMessage ? <section className="state-card">{submitMessage}</section> : null}
+          <FormRenderer schema={schema} onSubmit={handleSubmit} />
         </section>
       )}
     </main>

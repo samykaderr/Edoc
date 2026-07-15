@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import CreateForm from './pages/CreateForm';
 import ViewForm from './pages/ViewForm';
@@ -8,9 +9,11 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/create" element={<CreateForm />} />
-        <Route path="/view/:id" element={<ViewForm />} />
+        <Route element={<Layout />}>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/create" element={<CreateForm />} />
+          <Route path="/view/:schemaName" element={<ViewForm />} />
+        </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
