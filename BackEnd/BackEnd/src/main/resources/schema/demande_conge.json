@@ -1,0 +1,74 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://votreentreprise.com/schemas/demande_conge.json",
+    "title": "Demande de Congé",
+    "description": "Schéma de validation strict pour les demandes de congé",
+    "type": "object",
+    "documentType": "CONGE",
+
+    "properties": {
+        "idEmploye": {
+            "type": "integer",
+            "title": "Identifiant Employé"
+        },
+        "dateDebut": {
+            "type": "string",
+            "format": "date",
+            "title": "Date de début"
+        },
+        "dateFin": {
+            "type": "string",
+            "format": "date",
+            "title": "Date de fin"
+        },
+        "typeConge": {
+            "type": "string",
+            "title": "Type de congé",
+            "enum": [
+                "ANNUEL",
+                "MALADIE",
+                "SANS_SOLDE"
+            ],
+            "enumTitles": [
+                "Congé Annuel",
+                "Congé Maladie",
+                "Congé Sans Solde"
+            ]
+        },
+        "motif": {
+            "type": "string",
+            "title": "Motif / Description",
+            "minLength": 10,
+            "maxLength": 500
+        },
+        "referenceMedicale": {
+            "type": "string",
+            "title": "Numéro de certificat médical",
+            "pattern": "^MED-[0-9]{5}$"
+        }
+    },
+
+    "required": [
+        "idEmploye",
+        "dateDebut",
+        "dateFin",
+        "typeConge"
+    ],
+
+    "allOf": [
+        {
+            "if": {
+                "properties": {
+                    "typeConge": {
+                        "const": "MALADIE"
+                    }
+                }
+            },
+            "then": {
+                "required": [
+                    "referenceMedicale"
+                ]
+            }
+        }
+    ]
+}
