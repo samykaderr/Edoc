@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { getEmployeById } from '../services/api';
-
+import './FormRenderer.css';
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -26,10 +26,11 @@ function getInitialValue(field) {
   return '';
 }
 
-function getFieldControl(field) {
+function getFieldControl(field, fieldName = '') {
   if (!field) return 'text';
   if (field.enum) return 'select';
   if (field.format === 'date') return 'date';
+  if (fieldName.toLowerCase().includes('date')) return 'date';
   if (field.type === 'boolean') return 'checkbox';
   if (field.type === 'integer' || field.type === 'number') return 'number';
   if (field.type === 'string' && typeof field.maxLength === 'number' && field.maxLength > 120) return 'textarea';
@@ -292,6 +293,28 @@ function FormRenderer({ schema, onSubmit }) {
       }
     });
 
+    // Validation date de début <= date de fin
+    let debutField = null;
+    let finField = null;
+    Object.keys(properties).forEach(key => {
+      const lower = key.toLowerCase();
+      if (lower.includes('date') && lower.includes('debut')) debutField = key;
+      if (lower.includes('date') && lower.includes('fin')) finField = key;
+    });
+
+    if (debutField && finField) {
+      const debutVal = formData[debutField];
+      const finVal = formData[finField];
+      if (debutVal && finVal) {
+        if (new Date(debutVal) > new Date(finVal)) {
+          nextErrors[finField] = "La date de fin ne peut pas être antérieure à la date de début.";
+          if (!nextErrors[debutField]) {
+            nextErrors[debutField] = "La date de début doit être antérieure ou égale à la date de fin.";
+          }
+        }
+      }
+    }
+
     setErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
   };
@@ -406,10 +429,10 @@ function FormRenderer({ schema, onSubmit }) {
           }
 
           // --- Champs normaux ---
-          const controlType = isReadOnly ? 'text' : getFieldControl(field);
+          const controlType = isReadOnly ? 'text' : getFieldControl(field, fieldName);
 
           return (
-            <div className="form-field" key={fieldName}>
+            <div className={`form-field ${controlType === 'date' ? 'half-width' : ''}`} key={fieldName}>
               <label className="form-field-label" htmlFor={fieldName}>
                 {field.title || fieldName}
                 {isRequired ? <span className="form-field-required">*</span> : null}

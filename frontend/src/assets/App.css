@@ -183,6 +183,7 @@
 
 .form-grid {
   display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 16px;
   margin-top: 20px;
 }
@@ -191,6 +192,17 @@
   display: grid;
   gap: 8px;
   text-align: left;
+  grid-column: span 2;
+}
+
+.form-field.half-width {
+  grid-column: span 1;
+}
+
+@media (max-width: 600px) {
+  .form-field.half-width {
+    grid-column: span 2;
+  }
 }
 
 .form-field-label {
@@ -231,6 +243,7 @@
 }
 
 .form-actions {
+  grid-column: span 2;
   display: flex;
   justify-content: flex-end;
   margin-top: 8px;
@@ -375,7 +388,9 @@
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Champs auto-remplis en lecture seule */
@@ -419,7 +434,8 @@
 
 body {
   margin: 0;
-  overflow: hidden; /* App is full screen */
+  overflow: hidden;
+  /* App is full screen */
 }
 
 .layout-container {
@@ -577,4 +593,3 @@ body {
   min-width: auto;
   background: transparent;
 }
-

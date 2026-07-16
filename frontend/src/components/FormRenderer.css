@@ -1,0 +1,36 @@
+/* src/components/FormRenderer.css */
+
+/* ==========================================
+   STYLE DU SÉLECTEUR DE DATE ULTRA-VISIBLE
+   ========================================== */
+
+/* 1. On cible l'icône native du calendrier */
+input[type="date"]::-webkit-calendar-picker-indicator {
+    /* Force l'opacité à 100% (supprime l'effet transparent du navigateur) */
+    opacity: 1 !important;
+    display: block !important;
+
+    /* On ajuste sa taille pour qu'elle soit bien visible */
+    width: 20px;
+    height: 20px;
+    padding: 4px;
+    cursor: pointer;
+    border-radius: 4px;
+
+    /* 🌟 ASTUCE DE CONTRASTE :
+     Si votre fond d'input est sombre, ce filtre va inverser la couleur 
+     de l'icône noire pour la rendre d'un BLANC brillant et net. */
+    filter: invert(100%) brightness(150%);
+
+    transition: all 0.2s ease-in-out;
+}
+
+/* 2. Effet visuel sympa au survol (Hover) */
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+    /* Au survol, l'icône grossit légèrement et devient bleue pour inviter au clic */
+    transform: scale(1.15);
+    background-color: rgba(0, 123, 255, 0.2);
+
+    /* Filtre pour colorer l'icône en un beau bleu électrique */
+    filter: invert(41%) sepia(85%) saturate(1243%) hue-rotate(190deg) brightness(100%) contrast(105%);
+}
