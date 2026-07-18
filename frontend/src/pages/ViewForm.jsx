@@ -18,10 +18,14 @@ function ViewForm() {
         setLoading(true);
         setError('');
         setSubmitMessage('');
-        const response = await getDocumentSchema(schemaName);
+        const response = await fetch(`/schema/${schemaName}.json`);
+        if (!response.ok) {
+          throw new Error(`Erreur HTTP: ${response.status}`);
+        }
+        const data = await response.json();
 
         if (isActive) {
-          setSchema(normalizeApiData(response.data));
+          setSchema(normalizeApiData(data));
         }
       } catch (err) {
         if (isActive) {

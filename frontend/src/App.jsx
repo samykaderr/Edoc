@@ -3,6 +3,7 @@ import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import CreateForm from './pages/CreateForm';
 import ViewForm from './pages/ViewForm';
+import DocumentsList from './pages/DocumentsList';
 import './assets/App.css';
 
 function App() {
@@ -11,6 +12,7 @@ function App() {
       <Routes>
         <Route element={<Layout />}>
           <Route path="/" element={<Dashboard />} />
+          <Route path="/documents" element={<DocumentsList />} />
           <Route path="/create" element={<CreateForm />} />
           <Route path="/view/:schemaName" element={<ViewForm />} />
         </Route>

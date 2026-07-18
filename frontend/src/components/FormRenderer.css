@@ -3,14 +3,12 @@
 /* ==========================================
    STYLE DU SÉLECTEUR DE DATE ULTRA-VISIBLE
    ========================================== */
-
-/* 1. On cible l'icône native du calendrier */
 input[type="date"]::-webkit-calendar-picker-indicator {
-    /* Force l'opacité à 100% (supprime l'effet transparent du navigateur) */
+
     opacity: 1 !important;
     display: block !important;
 
-    /* On ajuste sa taille pour qu'elle soit bien visible */
+
     width: 20px;
     height: 20px;
     padding: 4px;

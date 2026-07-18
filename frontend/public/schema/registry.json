@@ -1,0 +1,16 @@
+{
+  "schemas": [
+    {
+      "code": "DC-001",
+      "schemaName": "demande_conge",
+      "title": "Demande de Congé",
+      "description": "Formulaire de demande de congé pour un employé."
+    },
+    {
+      "code": "OM-001",
+      "schemaName": "ordre_mission",
+      "title": "Ordre de Mission",
+      "description": "Formulaire pour générer un ordre de mission."
+    }
+  ]
+}

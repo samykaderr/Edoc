@@ -1,0 +1,128 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://votreentreprise.com/schemas/ordre_mission.json",
+    "title": "Ordre de Mission",
+    "description": "Schéma de validation strict pour les ordres de mission selon JSON Schema Draft 2020-12",
+    "type": "object",
+    "documentType": "ORDRE_MISSION",
+    "properties": {
+        "idEmploye": {
+            "type": "integer",
+            "title": "Identifiant Employé",
+            "description": "Saisissez votre identifiant pour charger automatiquement vos informations."
+        },
+        "nomEmploye": {
+            "type": "string",
+            "title": "Nom de l'employé",
+            "minLength": 2,
+            "maxLength": 100,
+            "readOnly": true
+        },
+        "prenomEmploye": {
+            "type": "string",
+            "title": "Prénom de l'employé",
+            "minLength": 2,
+            "maxLength": 100,
+            "readOnly": true
+        },
+        "gradeEmploye": {
+            "type": "string",
+            "title": "Grade / Poste",
+            "readOnly": true
+        },
+        "directionEmploye": {
+            "type": "string",
+            "title": "Direction / Service",
+            "readOnly": true
+        },
+        "objetMission": {
+            "type": "string",
+            "title": "Objet de la mission",
+            "description": "Décrivez l'objet et le but de la mission.",
+            "minLength": 10,
+            "maxLength": 500
+        },
+        "lieuMission": {
+            "type": "string",
+            "title": "Lieu de la mission",
+            "description": "Ville ou wilaya de destination de la mission.",
+            "minLength": 2,
+            "maxLength": 200
+        },
+        "dateDepart": {
+            "type": "string",
+            "format": "date",
+            "title": "Date de départ"
+        },
+        "dateRetour": {
+            "type": "string",
+            "format": "date",
+            "title": "Date de retour"
+        },
+        "moyenTransport": {
+            "type": "string",
+            "title": "Moyen de transport",
+            "oneOf": [
+                {
+                    "const": "VEHICULE_SERVICE",
+                    "title": "Véhicule de service"
+                },
+                {
+                    "const": "TRANSPORT_COMMUN",
+                    "title": "Transport en commun"
+                },
+                {
+                    "const": "VEHICULE_PERSONNEL",
+                    "title": "Véhicule personnel"
+                },
+                {
+                    "const": "AVION",
+                    "title": "Avion"
+                }
+            ]
+        },
+        "fraisPrisEnCharge": {
+            "type": "boolean",
+            "title": "Frais pris en charge par l'entreprise",
+            "default": true
+        },
+        "montantAvance": {
+            "type": "number",
+            "title": "Montant de l'avance (DA)",
+            "minimum": 0,
+            "description": "Montant de l'avance sur frais accordée pour la mission."
+        },
+        "observations": {
+            "type": "string",
+            "title": "Observations",
+            "maxLength": 500
+        }
+    },
+    "required": [
+        "idEmploye",
+        "objetMission",
+        "lieuMission",
+        "dateDepart",
+        "dateRetour",
+        "moyenTransport"
+    ],
+    "if": {
+        "properties": {
+            "moyenTransport": {
+                "const": "VEHICULE_PERSONNEL"
+            }
+        },
+        "required": ["moyenTransport"]
+    },
+    "then": {
+        "properties": {
+            "montantAvance": {
+                "type": "number",
+                "minimum": 0,
+                "title": "Montant de l'avance (DA)",
+                "description": "Obligatoire pour remboursement si véhicule personnel."
+            }
+        },
+        "required": ["montantAvance"]
+    }
+}
