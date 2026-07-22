@@ -1,81 +1,71 @@
 package com.soummam.backend.service;
 
 import com.soummam.backend.exception.TableNotFoundException;
-import org.springframework.jdbc.core.JdbcTemplate;
+import com.soummam.backend.repository.DataRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
 import java.util.StringJoiner;
 
-/**
- * DataService — Responsabilité unique : DML dynamique (INSERT / SELECT).
- *
- * Ce service ignore totalement la structure des formulaires. Il reçoit du JSON brut
- * (sous forme de Map Java) et construit dynamiquement les requêtes SQL paramétrées.
- * Aucune entité rigide (Conge, Document, etc.) n'est référencée ici.
- */
 @Service
 public class DataService {
 
     private static final String ALLOWED_IDENTIFIER = "[a-zA-Z_][a-zA-Z0-9_]*";
+    private final DataRepository dataRepository;
 
-    private final JdbcTemplate jdbc;
-
-    public DataService(JdbcTemplate jdbc) {
-        this.jdbc = jdbc;
+    public DataService(DataRepository dataRepository) {
+        this.dataRepository = dataRepository;
     }
 
-    // =========================================================================
-    // Lecture
-    // =========================================================================
-
-    /**
-     * Retourne toutes les lignes d'une table sous forme de liste de Map.
-     * Chaque Map représente une ligne : { "colonne": valeur, ... }
-     *
-     * @param tableName Nom de la table cible (validé avant exécution)
-     * @return Liste de Map<String, Object> — désérialisable directement en JSON
-     */
     public List<Map<String, Object>> findAll(String tableName) {
         String safe = validateIdentifier(tableName);
-
-        if (!tableExists(safe)) {
+        if (!dataRepository.tableExists(safe)) {
             throw new TableNotFoundException(safe);
         }
-
-        return jdbc.queryForList("SELECT * FROM " + safe);
+        return dataRepository.findAll(safe);
     }
 
-    // =========================================================================
-    // Écriture
-    // =========================================================================
-
     /**
-     * Insère dynamiquement un enregistrement dans la table cible.
-     * Construit le INSERT en utilisant uniquement les clés/valeurs du payload.
-     *
-     * @param tableName Nom de la table cible
-     * @param payload   Map des données du formulaire { "champ1": val1, "champ2": val2, ... }
-     * @return Nombre de lignes insérées (toujours 1 en cas de succès)
+     * Insère de manière transactionnelle le document :
+     * 1. Dans la table maîtresse (t_document) pour obtenir l'ID global.
+     * 2. Dans la table d'extension dynamique (doc_xxx) en y associant cet ID.
      */
-    public int insert(String tableName, Map<String, Object> payload) {
-        String safe = validateIdentifier(tableName);
-
-        if (!tableExists(safe)) {
-            throw new TableNotFoundException(safe);
-        }
-
+    @Transactional
+    public int insert(String documentType, Map<String, Object> payload) {
         if (payload == null || payload.isEmpty()) {
             throw new IllegalArgumentException("Le payload ne peut pas être vide.");
         }
 
-        // Construction sécurisée du INSERT avec colonnes et placeholders dynamiques
+        // 1. Déterminer le nom exact de la table dynamique (ex: doc_decharge)
+        String safeTableName = "doc_" + validateIdentifier(documentType);
+        if (!dataRepository.tableExists(safeTableName)) {
+            throw new TableNotFoundException(safeTableName);
+        }
+
+        // 2. Extraire les métadonnées pour la table maîtresse 't_document'
+        Object idEmploye = payload.remove("id_employe");
+        if (idEmploye == null) {
+            idEmploye = payload.remove("idEmploye"); // Supporte le camelCase provenant du Front
+        }
+        String statut = (String) payload.remove("statut");
+
+        // 3. Insérer d'abord dans t_document et récupérer l'ID généré
+        long generatedId = dataRepository.insertMasterDocument(documentType.toLowerCase(), idEmploye, statut);
+
+        // 4. Construire le INSERT dynamique pour l'extension, en forçant l'ID récupéré
         StringJoiner columns     = new StringJoiner(", ");
         StringJoiner placeholders = new StringJoiner(", ");
-        Object[]     values      = new Object[payload.size()];
 
-        int i = 0;
+        // On réserve la première case du tableau de valeurs pour notre ID maître
+        Object[] values = new Object[payload.size() + 1];
+
+        columns.add("id");
+        placeholders.add("?");
+        values[0] = generatedId;
+
+        int i = 1;
         for (Map.Entry<String, Object> entry : payload.entrySet()) {
             columns.add(validateIdentifier(entry.getKey()));
             placeholders.add("?");
@@ -84,36 +74,20 @@ public class DataService {
 
         String sql = String.format(
                 "INSERT INTO %s (%s) VALUES (%s)",
-                safe, columns, placeholders
+                safeTableName, columns, placeholders
         );
 
-        return jdbc.update(sql, values);
+        // 5. Exécuter l'insertion finale dans la table d'extension
+        return dataRepository.executeInsert(sql, values);
     }
 
-    // =========================================================================
-    // Helpers privés
-    // =========================================================================
-
-    private boolean tableExists(String tableName) {
-        String sql = "SELECT COUNT(*) FROM information_schema.tables " +
-                     "WHERE table_schema = 'public' AND table_name = ?";
-        Integer count = jdbc.queryForObject(sql, Integer.class, tableName);
-        return count != null && count > 0;
-    }
-
-    /**
-     * Valide et normalise un identifiant SQL (nom de table ou de colonne).
-     * Protège contre l'injection SQL sur les noms non paramétrables.
-     */
     private String validateIdentifier(String raw) {
         if (raw == null || raw.isBlank()) {
             throw new IllegalArgumentException("L'identifiant SQL ne peut pas être vide.");
         }
         String identifier = raw.trim().toLowerCase();
         if (!identifier.matches(ALLOWED_IDENTIFIER)) {
-            throw new IllegalArgumentException(
-                    "Identifiant SQL invalide : '" + identifier + "'."
-            );
+            throw new IllegalArgumentException("Identifiant SQL invalide : '" + identifier + "'.");
         }
         return identifier;
     }

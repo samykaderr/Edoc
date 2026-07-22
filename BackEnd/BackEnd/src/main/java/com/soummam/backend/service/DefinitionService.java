@@ -89,6 +89,12 @@ public class DefinitionService {
                     "Identifiant SQL invalide '" + identifier + "'. Utilisez uniquement [a-z, 0-9, _]."
             );
         }
+
+        // 💡 CODE À MODIFIER : Si on cherche le nom de la table et qu'il n'a pas le préfixe, on l'ajoute !
+        if ("tableName".equals(key) && !identifier.startsWith("doc_")) {
+            return "doc_" + identifier;
+        }
+
         return identifier;
     }
 
