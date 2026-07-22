@@ -1,0 +1,77 @@
+/* ==========================================================================
+   src/components/Shared/Skeleton.css — Animations et blocs de chargement "shimmer"
+   Importé dans : src/components/Shared/Skeleton.jsx
+   ========================================================================== */
+
+/* ---- Bloc squelette de base (texte, titre) ---- */
+.skeleton-block {
+  position: relative;
+  overflow: hidden;
+  border-radius: 999px;
+  color: transparent;
+  user-select: none;
+}
+
+/* ---- Effet shimmer sur les blocs, inputs et boutons ---- */
+.skeleton-block::after,
+.skeleton-input::after,
+.skeleton-button::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.65), transparent);
+  animation: skeleton-shimmer 1.4s infinite;
+}
+
+/* ---- Titre squelette ---- */
+.skeleton-title {
+  display: inline-flex;
+  width: min(320px, 100%);
+  min-height: 44px;
+  background: rgba(148, 163, 184, 0.22);
+}
+
+/* ---- Lignes de texte squelette ---- */
+.skeleton-line {
+  min-height: 18px;
+  background: rgba(148, 163, 184, 0.18);
+}
+
+.skeleton-line-wide {
+  width: min(520px, 100%);
+}
+
+.skeleton-line-medium {
+  width: 140px;
+}
+
+/* ---- Input et bouton squelettes ---- */
+.skeleton-input,
+.skeleton-button {
+  position: relative;
+  overflow: hidden;
+  border-radius: 16px;
+  background: rgba(226, 232, 240, 0.9);
+}
+
+.skeleton-input {
+  min-height: 52px;
+}
+
+.skeleton-input-large {
+  min-height: 120px;
+}
+
+.skeleton-button {
+  width: 140px;
+  height: 44px;
+  border-radius: 999px;
+}
+
+/* ---- Keyframe de l'animation shimmer ---- */
+@keyframes skeleton-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}

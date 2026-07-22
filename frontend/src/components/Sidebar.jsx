@@ -8,7 +8,7 @@ function Sidebar() {
       <div className="sidebar-header">
         <img src={logo} alt="Logo Edoc" className="logo-image" />
         <div className="sidebar-header-text">
-          <h2>Requestor Portal</h2>
+          <h2>PORTAIL E-DOCUMENT</h2>
           <span className="sidebar-subtitle">Document Management</span>
         </div>
       </div>

@@ -35,6 +35,7 @@ export function getDocumentSchema(schemaName) {
 }
 
 export function submitDocument(payload) {
+  console.log(payload);
   return api.post(documentEndpoints.submit, payload);
 }
 

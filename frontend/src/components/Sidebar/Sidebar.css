@@ -1,0 +1,87 @@
+/* ==========================================================================
+   src/components/Sidebar/Sidebar.css — Menu latéral, logos, navigation
+   Importé dans : src/components/Sidebar/Sidebar.jsx
+   ========================================================================== */
+
+/* Colonne latérale */
+.sidebar {
+  width: 260px;
+  background: #f4f4f4;
+  border-right: 1px solid rgba(15, 23, 42, 0.08);
+  display: flex;
+  flex-direction: column;
+  z-index: 10;
+  box-shadow: 4px 0 24px rgba(15, 23, 42, 0.03);
+}
+
+/* En-tête de la sidebar (logo + nom) */
+.sidebar-header {
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.05);
+}
+
+.logo-image {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  border-radius: 6px;
+}
+
+.sidebar-header-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #0f172a;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.sidebar-subtitle {
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+/* Navigation principale */
+.sidebar-nav {
+  padding: 24px 16px;
+  flex: 1;
+}
+
+.sidebar-nav ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sidebar-nav a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  text-decoration: none;
+  color: #475569;
+  font-weight: 500;
+  transition: all 180ms ease;
+}
+
+.sidebar-nav a:hover {
+  background: rgba(79, 70, 229, 0.05);
+  color: #312e81;
+}
+
+.sidebar-nav a.active {
+  background: #3c4043;
+  color: #fff;
+  font-weight: 600;
+}

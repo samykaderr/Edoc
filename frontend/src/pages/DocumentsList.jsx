@@ -29,7 +29,7 @@ function DocumentsList() {
         // On récupère les données de la table correspondante au type (ou 'default_table' par défaut)
         // ATTENTION: La nouvelle API (formDataService.all) attend un nom de table. On le prend du type, ou si vide, on peut lister tout selon votre architecture.
         // Puisque nous n'avons pas la table exacte, on demande une par défaut pour l'instant
-        const response = await formDataService.all('test'); 
+        const response = await formDataService.all('test');
         // Si l'API retourne des données, on essaie de les mapper, sinon on utilise les mocks.
         if (response && response.length > 0) {
           const mapped = response.map((item, index) => ({
@@ -114,7 +114,7 @@ function DocumentsList() {
             <select
               value={documentType}
               onChange={(e) => setDocumentType(e.target.value)}
-              style={{ width: '100%', padding: '0.5rem', border: '1px solid #dadce0', borderRadius: '12px', fontSize: '0.875rem', backgroundColor: '#fff' }}
+              style={{ width: '100%', padding: '0.5rem', border: '1px solid #dadce0', borderRadius: '12px', fontSize: '0.875rem', backgroundColor: '#0e6292ff' }}
             >
               <option value="">Select Document Type</option>
               {schemas.map(s => (

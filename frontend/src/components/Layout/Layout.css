@@ -1,0 +1,53 @@
+/* ==========================================================================
+   src/components/Layout/Layout.css — Conteneur principal, app-shell, structure de base
+   Importé dans : src/components/Layout/Layout.jsx
+   ========================================================================== */
+
+/* App Shell — Conteneur de page principale (Dashboard, ViewForm, etc.) */
+.app-shell {
+  min-height: 100vh;
+  min-width: 1024px;
+  max-width: 100%;
+  /* Forces desktop view */
+  padding: 32px;
+  background:
+    radial-gradient(circle at top left, rgba(35, 116, 255, 0.16), transparent 30%),
+    radial-gradient(circle at top right, rgba(255, 124, 84, 0.16), transparent 28%),
+    linear-gradient(180deg, #f8fbff 0%, #eef3ff 100%);
+  color: #0f172a;
+}
+
+/* Layout principal : sidebar + contenu */
+.layout-container {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  background: #f8fbff;
+}
+
+/* Zone principale (TopNav + contenu scrollable) */
+.layout-main-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Zone de contenu scrollable */
+.layout-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0;
+  background:
+    radial-gradient(circle at top left, rgba(35, 116, 255, 0.16), transparent 30%),
+    radial-gradient(circle at top right, rgba(255, 124, 84, 0.16), transparent 28%),
+    linear-gradient(180deg, #f8fbff 0%, #eef3ff 100%);
+}
+
+/* Override app-shell lorsqu'il est imbriqué dans le layout */
+.layout-content .app-shell {
+  min-height: auto;
+  min-width: auto;
+  background: transparent;
+}

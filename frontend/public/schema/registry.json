@@ -7,10 +7,10 @@
       "description": "Formulaire de demande de congé pour un employé."
     },
     {
-      "code": "OM-001",
-      "schemaName": "ordre_mission",
-      "title": "Ordre de Mission",
-      "description": "Formulaire pour générer un ordre de mission."
+      "code": "RQ-001",
+      "schemaName": "requisition",
+      "title": "Requisition",
+      "description": "Formulaire de requisition pour un employé."
     }
   ]
 }

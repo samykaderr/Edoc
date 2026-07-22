@@ -7,7 +7,8 @@ function Dashboard() {
   const navigate = useNavigate();
 
   const handleCardClick = (documentType) => {
-    navigate(`/documents?type=${documentType.schemaName}`);
+    // 🟢 On redirige vers la nouvelle page dédiée avec le paramètre d'URL
+    navigate(`/document-manager/${documentType.schemaName}`);
   };
 
   return (

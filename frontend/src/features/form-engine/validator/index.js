@@ -72,27 +72,11 @@ export function validateField(field, value, isRequired) {
  * @returns {{ errors: object, isValid: boolean }}
  */
 export function buildFormErrors(properties, formData, requiredFields, context = {}) {
-  const {
-    employeFound = true,
-    lookupFilledFields = new Set(),
-    lookupTriggerField = null,
-  } = context;
-
   const errors = {};
-
-  // --- EmployeLookup field validation ---
-  if (lookupTriggerField && properties[lookupTriggerField]) {
-    if (!formData[lookupTriggerField]) {
-      errors[lookupTriggerField] = 'Ce champ est requis.';
-    } else if (!employeFound) {
-      errors[lookupTriggerField] = 'Veuillez rechercher un employé valide.';
-    }
-  }
 
   // --- Per-field validation ---
   Object.entries(properties).forEach(([fieldName, field]) => {
-    if (fieldName === lookupTriggerField) return;     // already handled
-    if (lookupFilledFields.has(fieldName)) return;    // auto-filled, not user-editable
+    if (fieldName === 'idEmploye' || fieldName === 'id_employe') return;
 
     const fieldErrors = validateField(field, formData[fieldName], requiredFields.has(fieldName));
     if (fieldErrors.length > 0) {

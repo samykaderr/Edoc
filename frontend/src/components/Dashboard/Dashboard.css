@@ -1,0 +1,156 @@
+/* ==========================================================================
+   src/components/Dashboard/Dashboard.css — Hero panel, bannière, grille de cartes
+   Importé dans : src/pages/Dashboard.jsx  (ou src/components/Dashboard/Dashboard.jsx)
+   ========================================================================== */
+
+/* ---- Hero Panel ---- */
+.hero-panel {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  align-items: flex-end;
+  padding: 28px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 28px;
+  background: rgba(109, 235, 255, 0.793);
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(16px);
+}
+
+.hero-copy {
+  max-width: 760px;
+}
+
+.eyebrow {
+  margin: 0 0 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 12px;
+  color: #4f46e5;
+  font-weight: 700;
+}
+
+.hero-panel h1 {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 3.8rem);
+  line-height: 1.02;
+  letter-spacing: -0.05em;
+}
+
+.hero-text {
+  margin-top: 14px;
+  max-width: 64ch;
+  font-size: 1.02rem;
+  line-height: 1.7;
+  color: #475569;
+}
+
+/* Badge de statut dans le hero */
+.hero-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 999px;
+  background: rgba(79, 70, 229, 0.1);
+  color: #312e81;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  box-shadow: 0 0 0 6px rgba(34, 197, 94, 0.15);
+}
+
+/* ---- Grille de cartes de documents ---- */
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+  margin-top: 24px;
+}
+
+/* Cartes document et état — base commune */
+.document-card,
+.state-card {
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.08);
+}
+
+/* Carte de document interactive */
+.document-card {
+  padding: 20px;
+  text-align: left;
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+}
+
+.document-card:focus-visible {
+  outline: 3px solid rgba(79, 70, 229, 0.3);
+  outline-offset: 3px;
+}
+
+.document-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(79, 70, 229, 0.24);
+  box-shadow: 0 24px 70px rgba(79, 70, 229, 0.15);
+}
+
+/* En-tête de carte (chip + tag) */
+.card-topline {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: linear-gradient(135deg, #111827, #334155);
+  color: white;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.schema-tag {
+  font-size: 0.76rem;
+  color: #64748b;
+}
+
+.document-card h2 {
+  margin: 14px 0 10px;
+  color: #0f172a;
+  letter-spacing: -0.04em;
+}
+
+.document-card p {
+  margin: 0;
+  color: #475569;
+  line-height: 1.65;
+  flex-grow: 1;
+}
+
+/* ---- Carte d'état (vide / erreur) ---- */
+.state-card {
+  margin-top: 24px;
+  padding: 18px 20px;
+  color: #334155;
+}
+
+.state-card-error {
+  border-color: rgba(220, 38, 38, 0.18);
+  background: rgba(254, 242, 242, 0.92);
+  color: #b91c1c;
+}

@@ -1,0 +1,15 @@
+{
+    "$schema": "https://json-schema.org/draft-2020-12/schema",
+    "$id": "https://votreentreprise.com/schemas/requisition.json",
+    "title": "Requisition",
+    "description": "Formulaire des requisition  ",
+    "type": "object",
+    "documentType": "REQUISITION",
+    "properties": {
+        "nom": {
+            "type": "sg",
+            "title": "nom"
+        }
+    },
+    "required": []
+}

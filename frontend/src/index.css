@@ -1,0 +1,9 @@
+/* ==========================================================================
+   src/index.css — Styles globaux minimaux (body / html)
+   Importé dans : src/main.jsx
+   ========================================================================== */
+
+body {
+  margin: 0;
+  overflow: hidden; /* App is full screen */
+}

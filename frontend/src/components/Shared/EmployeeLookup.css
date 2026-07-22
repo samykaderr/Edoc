@@ -1,0 +1,80 @@
+/* ==========================================================================
+   src/components/Shared/EmployeeLookup.css — Recherche d'employés et badges
+   Importé dans : src/components/Shared/EmployeeLookup.jsx
+   ========================================================================== */
+
+/* ---- Wrapper principal du champ de lookup ---- */
+.employe-lookup-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* ---- Ligne input + bouton ---- */
+.employe-lookup-input-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.employe-lookup-input-row input {
+  flex: 1;
+}
+
+/* ---- Bouton de recherche ---- */
+.lookup-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border: none;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  color: white;
+  cursor: pointer;
+  transition: transform 140ms ease, box-shadow 140ms ease, opacity 140ms ease;
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35);
+}
+
+.lookup-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(79, 70, 229, 0.45);
+}
+
+.lookup-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ---- Spinner de chargement dans le bouton ---- */
+.lookup-spinner {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 2.5px solid rgba(255, 255, 255, 0.35);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---- Badge "Employé trouvé" ---- */
+.employe-found-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #15803d;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(34, 197, 94, 0.12);
+  width: fit-content;
+}

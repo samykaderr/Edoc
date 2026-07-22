@@ -1,0 +1,60 @@
+/* ==========================================================================
+   src/components/TopNav/TopNav.css — Barre du haut, actions utilisateur, avatar
+   Importé dans : src/components/TopNav/TopNav.jsx
+   ========================================================================== */
+
+/* Barre de navigation supérieure */
+.top-nav {
+  height: 72px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32px;
+  z-index: 5;
+}
+
+/* Titre affiché dans la barre */
+.top-nav-title {
+  font-weight: 600;
+  color: #334155;
+  font-size: 1.1rem;
+}
+
+/* Groupe d'actions à droite */
+.top-nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* Bouton icône générique */
+.icon-btn {
+  background: transparent;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  transition: background 150ms ease;
+}
+
+.icon-btn:hover {
+  background: rgba(15, 23, 42, 0.05);
+}
+
+/* Avatar utilisateur */
+.user-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #111827, #334155);
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+}

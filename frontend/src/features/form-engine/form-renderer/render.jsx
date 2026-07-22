@@ -19,8 +19,8 @@ export function EmployeLookup({
   isRequired,
 }) {
   const [isSearching, setIsSearching] = useState(false);
-  const [localError,  setLocalError]  = useState(null);
-  const [foundLabel,  setFoundLabel]  = useState(null); // affiche le nom trouvé
+  const [localError, setLocalError] = useState(null);
+  const [foundLabel, setFoundLabel] = useState(null); // affiche le nom trouvé
   const abortControllerRef = useRef(null);
 
   const searchEmploye = useCallback(
@@ -71,26 +71,20 @@ export function EmployeLookup({
     };
   }, [idValue, onEmployeCleared, searchEmploye]);
 
-  const handleManualSearch = () => {
+  {/* const handleManualSearch = () => {
     const id = parseInt(idValue, 10);
     if (!idValue || Number.isNaN(id)) return;
     abortControllerRef.current?.abort();
     const controller = new AbortController();
     abortControllerRef.current = controller;
     searchEmploye(id, controller.signal);
-  };
+  };*/}
 
   const displayError = lookupError || localError;
 
   return (
     <div className="form-field">
-      <label className="form-field-label" htmlFor="idEmploye">
-        Identifiant Employé
-        {isRequired ? <span className="form-field-required">*</span> : null}
-      </label>
-      <p className="hero-text" style={{ marginTop: 0, marginBottom: '0.5rem' }}>
-        Saisissez votre identifiant pour charger automatiquement vos informations.
-      </p>
+
       <div className="employe-lookup-wrapper">
         <div className="employe-lookup-input-row">
           <input
@@ -158,9 +152,31 @@ export function FieldRenderer({
 
   const renderControl = () => {
     switch (effectiveControl) {
+      case 'unsupported':
+        return (
+          <div className="state-card state-card-error" style={{ padding: '12px', fontSize: '0.9rem', borderRadius: '8px' }}>
+            <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                <line x1="12" y1="9" x2="12" y2="13"></line>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+              </svg>
+              Champ non pris en charge
+            </div>
+            <div style={{ marginTop: '4px', opacity: 0.85 }}>
+              Le champ <code>{fieldName}</code> utilise un type non géré par le registre.
+            </div>
+          </div>
+        );
+
       case 'select':
         return (
-          <select id={fieldName} name={fieldName} value={value ?? ''} onChange={onChange}>
+          <select
+            id={fieldName}
+            name={fieldName}
+            value={value ?? ''}
+            onChange={(e) => onChange(fieldName, e.target.value)}
+          >
             <option value="">-- Sélectionnez une option --</option>
             {field.oneOf?.map((option) => (
               <option key={option.const} value={option.const}>
@@ -179,7 +195,7 @@ export function FieldRenderer({
             type="date"
             value={value ?? ''}
             min={minDate}
-            onChange={onChange}
+            onChange={(e) => !isReadOnly && onChange(fieldName, e.target.value)}
             readOnly={isReadOnly}
             onClick={(e) => !isReadOnly && e.target.showPicker?.()}
             onFocus={(e) => !isReadOnly && e.target.showPicker?.()}
@@ -193,7 +209,7 @@ export function FieldRenderer({
             id={fieldName}
             name={fieldName}
             value={value ?? ''}
-            onChange={onChange}
+            onChange={(e) => !isReadOnly && onChange(fieldName, e.target.value)}
             readOnly={isReadOnly}
             minLength={field.minLength}
             maxLength={field.maxLength}
@@ -207,12 +223,16 @@ export function FieldRenderer({
             name={fieldName}
             type="checkbox"
             checked={Boolean(value)}
-            onChange={onChange}
+            onChange={(e) => !isReadOnly && onChange(fieldName, e.target.checked)}
             disabled={isReadOnly}
           />
         );
 
       default:
+        let placeholder = undefined;
+        if (effectiveControl === 'email' || fieldName.toLowerCase().includes('email')) {
+          placeholder = "prenom.nom@soummam-dz.com";
+        }
         return (
           <input
             id={fieldName}
@@ -220,9 +240,10 @@ export function FieldRenderer({
             type={effectiveControl}
             step={field?.type === 'integer' ? '1' : undefined}
             inputMode={field?.type === 'integer' ? 'numeric' : undefined}
+            placeholder={placeholder}
             value={value ?? ''}
             readOnly={isReadOnly}
-            onChange={isReadOnly ? undefined : onChange}
+            onChange={isReadOnly ? undefined : (e) => onChange(fieldName, e.target.value)}
             className={isReadOnly ? 'input-readonly' : ''}
           />
         );
@@ -274,39 +295,23 @@ export const renderField = (fieldName, property, value, formData, handleChange, 
         onIdChange={(newId) =>
           handleChange({ target: { name: fieldName, value: newId, type: 'number' } })
         }
-        onEmployeFound={onEmployeFound ?? (() => {})}
-        onEmployeCleared={onEmployeCleared ?? (() => {})}
+        onEmployeFound={onEmployeFound ?? (() => { })}
+        onEmployeCleared={onEmployeCleared ?? (() => { })}
         lookupError={error}
       />
     );
   }
 
-  // ─── Champs readOnly (remplis automatiquement par le lookup) ───
-  if (property.readOnly) {
-    return (
-      <FieldRenderer
-        key={fieldName}
-        fieldName={fieldName}
-        field={property}
-        controlType="text"
-        value={value}
-        onChange={handleChange}
-        formData={formData}
-        isReadOnly={true}
-        isRequired={false}
-        error={error}
-      />
-    );
-  }
+
 
   // ─── Déduction du controlType depuis le JSON Schema ───
   let controlType = 'text';
-  if (property.oneOf)                                                              controlType = 'select';
+  if (property.oneOf) controlType = 'select';
   else if (property.format === 'date' || fieldName.toLowerCase().includes('date')) controlType = 'date';
   else if (property.type === 'string' && (!property.maxLength || property.maxLength > 255)) controlType = 'textarea';
-  else if (property.type === 'boolean')                                            controlType = 'checkbox';
-  else if (property.type === 'integer' || property.type === 'number')              controlType = 'number';
-  else if (property.format === 'email')                                            controlType = 'email';
+  else if (property.type === 'boolean') controlType = 'checkbox';
+  else if (property.type === 'integer' || property.type === 'number') controlType = 'number';
+  else if (property.format === 'email') controlType = 'email';
 
   return (
     <FieldRenderer

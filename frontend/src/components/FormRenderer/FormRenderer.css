@@ -1,0 +1,162 @@
+/* ==========================================================================
+   src/components/FormRenderer/FormRenderer.css — Formulaire dynamique
+   Importé dans : src/components/FormRenderer/FormRenderer.jsx
+   ========================================================================== */
+
+/* ---- En-tête de page formulaire ---- */
+.view-form-header {
+  margin-bottom: 24px;
+}
+
+.form-page-body {
+  margin-top: 24px;
+}
+
+/* ---- Conteneur du rendu de formulaire ---- */
+.form-renderer {
+  padding: 24px;
+  border-radius: 28px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  background: rgba(203, 202, 202, 0.88);
+  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.08);
+}
+
+.form-renderer-header h2 {
+  margin-top: 0;
+}
+
+.form-renderer-header p {
+  margin-top: 8px;
+  color: #475569;
+}
+
+/* ---- Grille CSS à 2 colonnes ---- */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 20px;
+}
+
+/* Champ de formulaire — occupe 2 colonnes par défaut */
+.form-field {
+  display: grid;
+  gap: 8px;
+  text-align: left;
+  grid-column: span 2;
+}
+
+/* Champ demi-largeur — occupe 1 colonne */
+.form-field.half-width {
+  grid-column: span 1;
+}
+
+/* Sur petits écrans, les champs half-width repassent en pleine largeur */
+@media (max-width: 600px) {
+  .form-field.half-width {
+    grid-column: span 2;
+  }
+}
+
+/* ---- Labels ---- */
+.form-field-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.form-field-required {
+  color: #dc2626;
+}
+
+/* ---- Inputs, Textarea, Select ---- */
+.form-field input,
+.form-field textarea,
+.form-field select {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid rgba(15, 23, 42, 0.16);
+  border-radius: 16px;
+  padding: 14px 16px;
+  font: inherit;
+  color: #0f172a;
+  background: rgba(248, 250, 252, 0.95);
+}
+
+.form-field textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.form-field input:focus,
+.form-field textarea:focus,
+.form-field select:focus {
+  outline: 2px solid rgba(79, 70, 229, 0.25);
+  border-color: rgba(79, 70, 229, 0.4);
+}
+
+/* ---- Date picker — icône ultra-visible ---- */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  opacity: 1 !important;
+  display: block !important;
+  width: 20px;
+  height: 20px;
+  padding: 4px;
+  cursor: pointer;
+  border-radius: 4px;
+  /* Inverse l'icône noire pour la rendre blanche sur fond sombre */
+  filter: invert(100%) brightness(150%);
+  transition: all 0.2s ease-in-out;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  transform: scale(1.15);
+  background-color: rgba(0, 123, 255, 0.2);
+  filter: invert(41%) sepia(85%) saturate(1243%) hue-rotate(190deg) brightness(100%) contrast(105%);
+}
+
+/* ---- Zone d'actions (bouton Soumettre) ---- */
+.form-actions {
+  grid-column: span 2;
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.form-submit-button {
+  border: 0;
+  border-radius: 999px;
+  padding: 12px 18px;
+  background: linear-gradient(135deg, #111827, #4f46e5);
+  color: white;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.form-submit-button:hover {
+  transform: translateY(-1px);
+}
+
+/* ---- Champ en erreur ---- */
+.input-error {
+  border-color: rgba(220, 38, 38, 0.5) !important;
+  background: rgba(254, 242, 242, 0.6) !important;
+}
+
+.field-error {
+  color: #dc2626;
+  font-size: 0.85rem;
+  display: block;
+}
+
+/* ---- Champ auto-rempli en lecture seule ---- */
+.input-readonly {
+  background: rgba(241, 245, 249, 0.95) !important;
+  color: #334155 !important;
+  cursor: default;
+  border-color: rgba(15, 23, 42, 0.06) !important;
+  font-style: italic;
+}

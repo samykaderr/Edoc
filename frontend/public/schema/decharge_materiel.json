@@ -1,0 +1,89 @@
+{
+    "$schema": "https://json-schema.org/draft-2020-12/schema",
+    "$id": "https://votreentreprise.com/schemas/decharge_materiel.json",
+    "title": "Décharge de Matériel",
+    "description": "Forlumaire  pour la prise en charge ou la restitution d'équipements professionnels",
+    "type": "object",
+    "documentType": "DECHARGE",
+    "properties": {
+        "idEmploye": {
+            "type": "integer",
+            "title": "Identifiant de l'Employé"
+        },
+        "dateEvenement": {
+            "type": "string",
+            "format": "date",
+            "title": "Date de l'opération"
+        },
+        "typeOperation": {
+            "type": "string",
+            "title": "Type d'opération",
+            "oneOf": [
+                {
+                    "const": "REMISE",
+                    "title": "Remise de matériel (Prise en charge)"
+                },
+                {
+                    "const": "RESTITUTION",
+                    "title": "Restitution de matériel (Retour)"
+                }
+            ]
+        },
+        "designationMateriel": {
+            "type": "string",
+            "title": "Désignation et Numéro de Série",
+            "description": "Ex: MacBook Pro 16'' SN: C02X12345678",
+            "minLength": 5,
+            "maxLength": 255
+        },
+        "etatMateriel": {
+            "type": "string",
+            "title": "État du matériel constaté",
+            "oneOf": [
+                {
+                    "const": "NEUF",
+                    "title": "Neuf / Sous emballage"
+                },
+                {
+                    "const": "BON",
+                    "title": "Bon état général"
+                },
+                {
+                    "const": "ENDOMMAGE",
+                    "title": "Endommagé / Signes d'usure critique"
+                }
+            ]
+        },
+        "observationsDegats": {
+            "type": "string",
+            "title": "Détail des dommages constatés",
+            "minLength": 10,
+            "maxLength": 500
+        },
+        "engagementHonneur": {
+            "type": "boolean",
+            "title": "J'atteste sur l'honneur l'exactitude de cet état des lieux et m'engage à prendre soin du matériel confié.",
+            "const": true
+        }
+    },
+    "required": [
+        "idEmploye",
+        "dateEvenement",
+        "typeOperation",
+        "designationMateriel",
+        "etatMateriel",
+        "engagementHonneur"
+    ],
+    "if": {
+        "properties": {
+            "etatMateriel": {
+                "const": "ENDOMMAGE"
+            }
+        }
+    },
+    "then": {
+        "required": [
+            "observationsDegats"
+        ]
+    }
+}

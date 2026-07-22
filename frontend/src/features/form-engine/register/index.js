@@ -12,7 +12,7 @@
  * @type {Array<{ test: (field: object, name: string) => boolean, control: string }>}
  */
 const FIELD_RULES = [
-  { test: (f)      => !!f.enum,                                                  control: 'select'   },
+  { test: (f)      => !!f.enum || !!f.oneOf,                                        control: 'select'   },
   { test: (f)      => f.format === 'date',                                        control: 'date'     },
   { test: (_, n)   => n.toLowerCase().includes('date'),                           control: 'date'     },
   { test: (f)      => f.type === 'boolean',                                        control: 'checkbox' },
@@ -29,9 +29,12 @@ const FIELD_RULES = [
  * @returns {string} - One of: 'select' | 'date' | 'checkbox' | 'number' | 'textarea' | 'text'
  */
 export function getFieldControl(field, fieldName = '') {
-  if (!field) return 'text';
+  if (!field) return 'unsupported';
   const rule = FIELD_RULES.find(({ test }) => test(field, fieldName));
-  return rule ? rule.control : 'text';
+  if (rule) return rule.control;
+  
+  if (field.type === 'string' || !field.type) return 'text';
+  return 'unsupported';
 }
 
 /**

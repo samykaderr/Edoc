@@ -2,7 +2,7 @@
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "$id": "https://votreentreprise.com/schemas/ordre_mission.json",
     "title": "Ordre de Mission",
-    "description": "Schéma de validation strict pour les ordres de mission selon JSON Schema Draft 2020-12",
+    "description": "Formulaire   pour les ordres de mission",
     "type": "object",
     "documentType": "ORDRE_MISSION",
     "properties": {
@@ -112,7 +112,9 @@
                 "const": "VEHICULE_PERSONNEL"
             }
         },
-        "required": ["moyenTransport"]
+        "required": [
+            "moyenTransport"
+        ]
     },
     "then": {
         "properties": {
@@ -123,6 +125,8 @@
                 "description": "Obligatoire pour remboursement si véhicule personnel."
             }
         },
-        "required": ["montantAvance"]
+        "required": [
+            "montantAvance"
+        ]
     }
 }

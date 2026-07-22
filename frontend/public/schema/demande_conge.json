@@ -2,7 +2,7 @@
     "$schema": "https://json-schema.org/draft-2020-12/schema",
     "$id": "https://votreentreprise.com/schemas/demande_conge.json",
     "title": "Demande de Congé",
-    "description": "Schéma de validation strict pour les demandes de congé",
+    "description": "Formulaire de validation strict pour les demandes de congé",
     "type": "object",
     "documentType": "CONGE",
     "properties": {
