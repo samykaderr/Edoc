@@ -47,11 +47,27 @@ public class FormDataController {
             @PathVariable String tableName,
             @RequestBody Map<String, Object> payload) {
 
-        dataService.insert(tableName, payload);
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(Map.of(
-                        "status", "SUCCESS",
-                        "message", "Données enregistrées avec succès dans la table : " + tableName
-                ));
+        try {
+            dataService.insert(tableName, payload);
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(Map.of(
+                            "status", "SUCCESS",
+                            "message", "Données enregistrées avec succès dans la table : " + tableName
+                    ));
+        } catch (org.springframework.dao.DataAccessException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of(
+                            "status", "ERROR",
+                            "error", "Erreur SQL lors de l'insertion. Vérifiez que la structure du JSON correspond aux colonnes.",
+                            "details", e.getMessage() != null ? e.getMessage() : "Unknown DB error"
+                    ));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of(
+                            "status", "ERROR",
+                            "error", "Erreur interne lors de la sauvegarde.",
+                            "details", e.getMessage() != null ? e.getMessage() : "Unknown error"
+                    ));
+        }
     }
 }

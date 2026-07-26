@@ -75,9 +75,10 @@ function ViewForm() {
     // Task 3.2 fix : setError n'est plus appelé avant le try (ce qui causait un flash
     // de message d'erreur avant même que la requête soit émise).
     try {
-      const parser = new JsonParser();
-      const mysqlPayload = parser.toMysqlPayload(schema);
-      const tableName = mysqlPayload.tableName;
+      // 🐛 BUG FIX: On utilise directement 'schemaName' issu de l'URL ('demande_conge')
+      // au lieu du nom généré par le JsonParser ('demande_de_conge') à partir du titre.
+      // Cela garantit que le POST pointe vers la même table que le syncSchema.
+      const tableName = schemaName;
 
       const dataToInsert = {
         ...finalPayload,

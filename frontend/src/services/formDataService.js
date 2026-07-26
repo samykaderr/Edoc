@@ -15,10 +15,20 @@ export const formDataService = {
   async insert(tableName, payload) {
     const response = await fetch(`${BASE_URL}/form-data/${encodeURIComponent(tableName)}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
       body: JSON.stringify(payload),
     });
-    if (!response.ok) throw new Error("Erreur lors de l'enregistrement des données.");
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      const errorMessage = errorData.error || errorData.message || `Erreur ${response.status} lors de l'enregistrement.`;
+      const details = errorData.details ? `\n(Détails techniques : ${errorData.details})` : '';
+      throw new Error(errorMessage + details);
+    }
+    
     return response.json();
   },
 
