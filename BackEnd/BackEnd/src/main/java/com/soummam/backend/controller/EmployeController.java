@@ -5,11 +5,10 @@ import com.soummam.backend.repository.EmployeRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
-import java.util.Optional;
+import java.util.List;
 
 @RestController
-@RequestMapping("/api/employes")
+@RequestMapping("/api/v1/employes")
 @CrossOrigin(origins = "*")
 public class EmployeController {
 
@@ -20,26 +19,22 @@ public class EmployeController {
     }
 
     /**
-     * GET /api/employes/{id}
-     * Retourne uniquement id, nom et prénom de l'employé.
-     * Utilisé par le formulaire frontend pour auto-remplir les champs nom/prénom
-     * après que l'utilisateur saisit son identifiant.
+     * GET /api/v1/employes
+     * Retourne la liste complète des employés.
+     */
+    @GetMapping
+    public ResponseEntity<List<Employe>> getAllEmployes() {
+        return ResponseEntity.ok(employeRepository.findAll());
+    }
+
+    /**
+     * GET /api/v1/employes/{id}
+     * Retourne les données d'un employé selon son identifiant (matricule).
      */
     @GetMapping("/{id}")
-    public ResponseEntity<?> getEmploye(@PathVariable Integer id) {
-        Optional<Employe> optional = employeRepository.findById(id);
-
-        if (optional.isEmpty()) {
-            return ResponseEntity.status(404)
-                    .body(Map.of("error", "Employé introuvable pour l'identifiant : " + id));
-        }
-
-        Employe employe = optional.get();
-        return ResponseEntity.ok(Map.of(
-                "idEmploye", employe.getIdEmploye(),
-                "nom",       employe.getNom(),
-                "prenom",    employe.getPrenom(),
-                "email",     employe.getEmail() != null ? employe.getEmail() : ""
-        ));
+    public ResponseEntity<Employe> getEmployeById(@PathVariable Integer id) {
+        return employeRepository.findById(id)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 }

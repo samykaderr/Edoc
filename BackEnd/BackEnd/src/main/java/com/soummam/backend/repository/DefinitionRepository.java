@@ -17,14 +17,48 @@ public class DefinitionRepository {
     }
 
     /**
-     * Exécute la création de la table avec un UUID MySQL.
+     * Exécute la création de la table avec les colonnes système obligatoires :
+     * - id         : clé primaire UUID auto-générée
+     * - num_doc    : numéro de document (envoyé par le Frontend)
+     * - statut     : état du document (défaut : 'brouillon')
+     * - created_at : horodatage automatique de création
      */
     public void executeCreateTable(String tableName) {
         String sql = String.format(
-                "CREATE TABLE IF NOT EXISTS %s (id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()))",
+                "CREATE TABLE IF NOT EXISTS %s (" +
+                "  id         VARCHAR(36)  NOT NULL PRIMARY KEY DEFAULT (UUID()), " +
+                "  num_doc    VARCHAR(50)  NULL, " +
+                "  statut     VARCHAR(50)  NULL DEFAULT 'brouillon', " +
+                "  created_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP" +
+                ")",
                 tableName
         );
         jdbc.execute(sql);
+    }
+
+    /**
+     * Retourne la liste de toutes les tables utilisateur de la base courante.
+     * Exclut les tables système d'information_schema.
+     */
+    public java.util.List<java.util.Map<String, Object>> listTables() {
+        String sql = "SELECT table_name AS tableName, table_rows AS rowCount, " +
+                     "create_time AS createdAt " +
+                     "FROM information_schema.tables " +
+                     "WHERE table_schema = DATABASE() AND table_type = 'BASE TABLE' " +
+                     "ORDER BY table_name";
+        return jdbc.queryForList(sql);
+    }
+
+    /**
+     * Retourne la liste des colonnes d'une table (nom, type, nullable).
+     */
+    public java.util.List<java.util.Map<String, Object>> listColumns(String tableName) {
+        String sql = "SELECT column_name AS name, data_type AS type, " +
+                     "is_nullable AS nullable, column_default AS defaultValue " +
+                     "FROM information_schema.columns " +
+                     "WHERE table_schema = DATABASE() AND table_name = ? " +
+                     "ORDER BY ordinal_position";
+        return jdbc.queryForList(sql, tableName);
     }
 
     /**

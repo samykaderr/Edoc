@@ -4,6 +4,8 @@ import com.soummam.backend.exception.TableNotFoundException;
 import com.soummam.backend.repository.DefinitionRepository;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -72,6 +74,113 @@ public class DefinitionService {
             // Délégation au Repository
             definitionRepository.executeModifyColumn(tableName, colName, colType, nullConstraint);
         }
+    }
+
+    // =========================================================================
+    // Synchronisation Automatique (JSON Schema -> MySQL)
+    // =========================================================================
+
+    @SuppressWarnings("unchecked")
+    public void syncSchema(String tableName, Map<String, Object> schema) {
+        // 1. Valider le nom de la table
+        String safeTableName = extractAndValidateIdentifier(Map.of("tableName", tableName), "tableName");
+
+        // 2. Créer la table si elle n'existe pas
+        if (!definitionRepository.tableExists(safeTableName)) {
+            definitionRepository.executeCreateTable(safeTableName);
+        }
+
+        // 3. Extraire les propriétés du schéma JSON
+        Map<String, Object> properties = (Map<String, Object>) schema.get("properties");
+        if (properties == null || properties.isEmpty()) {
+            return; // Rien à synchroniser
+        }
+
+        // 4. Aplatir les propriétés et mapper les types JSON vers SQL
+        List<Map<String, Object>> columns = new ArrayList<>();
+        extractColumnsFromProperties(properties, "", columns);
+
+        if (columns.isEmpty()) {
+            return;
+        }
+
+        // 5. Utiliser la logique existante pour ajouter les colonnes
+        Map<String, Object> addColumnsPayload = new HashMap<>();
+        addColumnsPayload.put("tableName", safeTableName);
+        addColumnsPayload.put("columns", columns);
+
+        addColumns(addColumnsPayload);
+    }
+
+    @SuppressWarnings("unchecked")
+    private void extractColumnsFromProperties(Map<String, Object> properties, String prefix, List<Map<String, Object>> columns) {
+        for (Map.Entry<String, Object> entry : properties.entrySet()) {
+            String key = prefix + entry.getKey();
+            Map<String, Object> fieldDef = (Map<String, Object>) entry.getValue();
+            String type = (String) fieldDef.get("type");
+
+            if ("object".equalsIgnoreCase(type) && fieldDef.containsKey("properties")) {
+                // Appel récursif pour les objets imbriqués (ex: periode.dateDebut -> periode_dateDebut)
+                extractColumnsFromProperties((Map<String, Object>) fieldDef.get("properties"), key + "_", columns);
+            } else {
+                // Mapper le type JSON vers le type SQL
+                String format = (String) fieldDef.get("format");
+                String sqlType = mapJsonTypeToSql(type, format);
+                
+                Map<String, Object> colMap = new HashMap<>();
+                colMap.put("name", key);
+                colMap.put("type", sqlType);
+                colMap.put("nullable", true); // Par défaut on autorise NULL lors de la synchro dynamique
+                columns.add(colMap);
+            }
+        }
+    }
+
+    private String mapJsonTypeToSql(String jsonType, String format) {
+        if (jsonType == null) return "VARCHAR(255)";
+        
+        switch (jsonType.toLowerCase()) {
+            case "integer":
+                return "INTEGER";
+            case "number":
+                return "NUMERIC(10,2)";
+            case "boolean":
+                return "BOOLEAN";
+            case "string":
+                if ("date".equalsIgnoreCase(format)) {
+                    return "DATE";
+                } else if ("date-time".equalsIgnoreCase(format)) {
+                    return "TIMESTAMP";
+                }
+                return "VARCHAR(255)";
+            case "array":
+                return "JSON"; // Les tableaux complexes peuvent être stockés en JSON
+            default:
+                return "VARCHAR(255)";
+        }
+    }
+
+    // =========================================================================
+    // Lecture de la structure (pour les endpoints GET /definitions)
+    // =========================================================================
+
+    /**
+     * Retourne la liste de toutes les tables utilisateur de la base.
+     */
+    public List<Map<String, Object>> getTables() {
+        return definitionRepository.listTables();
+    }
+
+    /**
+     * Retourne la liste des colonnes d'une table donnée.
+     * Lève TableNotFoundException si la table n'existe pas.
+     */
+    public List<Map<String, Object>> getFields(String tableName) {
+        String safe = extractAndValidateIdentifier(Map.of("tableName", tableName), "tableName");
+        if (!definitionRepository.tableExists(safe)) {
+            throw new TableNotFoundException(safe);
+        }
+        return definitionRepository.listColumns(safe);
     }
 
     // =========================================================================

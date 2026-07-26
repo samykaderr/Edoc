@@ -96,7 +96,7 @@ public class DataService {
 
     private boolean tableExists(String tableName) {
         String sql = "SELECT COUNT(*) FROM information_schema.tables " +
-                     "WHERE table_schema = 'public' AND table_name = ?";
+                     "WHERE table_schema = DATABASE() AND table_name = ?";
         Integer count = jdbc.queryForObject(sql, Integer.class, tableName);
         return count != null && count > 0;
     }
