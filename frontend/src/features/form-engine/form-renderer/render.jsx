@@ -1,12 +1,14 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { getEmployeById } from '../../../services/api';
+import { getFieldControl } from '../register';
+
 
 // ---------------------------------------------------------------------------
 // EmployeLookup — champ idEmploye avec recherche automatique par nom+prénom
 // ---------------------------------------------------------------------------
 
 /**
- * Input spécialisé pour la recherche d'employé par ID (avec debounce).
+ * Input spécialisé pour la recherche d'employé par ID (avec debounce et bouton manuel).
  * Quand un employé est trouvé, il appelle onEmployeFound(employe).
  * Quand le champ est vidé ou qu'une erreur survient, onEmployeCleared().
  */
@@ -17,10 +19,11 @@ export function EmployeLookup({
   onEmployeCleared,
   lookupError,
   isRequired,
+  isReadOnly = false,
 }) {
   const [isSearching, setIsSearching] = useState(false);
   const [localError, setLocalError] = useState(null);
-  const [foundLabel, setFoundLabel] = useState(null); // affiche le nom trouvé
+  const [foundLabel, setFoundLabel] = useState(null);
   const abortControllerRef = useRef(null);
 
   const searchEmploye = useCallback(
@@ -31,7 +34,7 @@ export function EmployeLookup({
         const response = await getEmployeById(id, { signal });
         const emp = response.data;
         setLocalError(null);
-        // Construit le label affiché sous le champ
+
         const label = [emp.prenom || emp.firstName, emp.nom || emp.lastName]
           .filter(Boolean).join(' ') || `Employé #${id}`;
         setFoundLabel(label);
@@ -47,6 +50,16 @@ export function EmployeLookup({
     },
     [onEmployeFound, onEmployeCleared],
   );
+
+  // Recherche manuelle declenchee par le bouton loupe
+  const handleManualSearch = () => {
+    const id = parseInt(idValue, 10);
+    if (!idValue || Number.isNaN(id)) return;
+    abortControllerRef.current?.abort();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    searchEmploye(id, controller.signal);
+  };
 
   useEffect(() => {
     if (!idValue) {
@@ -71,20 +84,10 @@ export function EmployeLookup({
     };
   }, [idValue, onEmployeCleared, searchEmploye]);
 
-  {/* const handleManualSearch = () => {
-    const id = parseInt(idValue, 10);
-    if (!idValue || Number.isNaN(id)) return;
-    abortControllerRef.current?.abort();
-    const controller = new AbortController();
-    abortControllerRef.current = controller;
-    searchEmploye(id, controller.signal);
-  };*/}
-
   const displayError = lookupError || localError;
 
   return (
     <div className="form-field">
-
       <div className="employe-lookup-wrapper">
         <div className="employe-lookup-input-row">
           <input
@@ -95,27 +98,28 @@ export function EmployeLookup({
             inputMode="numeric"
             placeholder="Ex: 1042"
             value={idValue ?? ''}
-            onChange={(e) => {
-              onIdChange(e.target.value);
-            }}
-            className={displayError ? 'input-error' : foundLabel ? 'input-valid' : ''}
+            onChange={isReadOnly ? undefined : (e) => onIdChange(e.target.value)}
+            readOnly={isReadOnly}
+            className={`${displayError ? 'input-error' : foundLabel ? 'input-valid' : ''} ${isReadOnly ? 'input-readonly' : ''}`.trim()}
           />
-          <button
-            type="button"
-            className="lookup-btn"
-            disabled={isSearching || !idValue}
-            onClick={handleManualSearch}
-            aria-label="Rechercher l'employé"
-          >
-            {isSearching ? (
-              <span className="lookup-spinner" />
-            ) : (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="11" cy="11" r="8" />
-                <line x1="21" y1="21" x2="16.65" y2="16.65" />
-              </svg>
-            )}
-          </button>
+          {!isReadOnly && (
+            <button
+              type="button"
+              className="lookup-btn"
+              disabled={isSearching || !idValue}
+              onClick={handleManualSearch}
+              aria-label="Rechercher l'employé"
+            >
+              {isSearching ? (
+                <span className="lookup-spinner" />
+              ) : (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="11" cy="11" r="8" />
+                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+              )}
+            </button>
+          )}
         </div>
 
         {/* Feedback visuel */}
@@ -187,7 +191,7 @@ export function FieldRenderer({
         );
 
       case 'date': {
-        const minDate = fieldName === 'dateFin' ? formData?.dateDebut : undefined;
+        const minDate = fieldName.endsWith('dateFin') ? formData?.dateDebut : undefined;
         return (
           <input
             id={fieldName}
@@ -278,22 +282,52 @@ export function FieldRenderer({
  * @param {string}   fieldName
  * @param {object}   property     - définition du champ JSON Schema
  * @param {*}        value        - valeur courante
- * @param {object}   formData     - état complet du formulaire (pour dateFin min)
- * @param {function} handleChange - onChange générique (synthetic event)
- * @param {object}   opts         - options supplémentaires : { onEmployeFound, onEmployeCleared, required, error }
+ * @param {object}   formData     - état complet du formulaire
+ * @param {function} handleChange - onChange générique
+ * @param {object}   opts         - options supplémentaires
  */
 export const renderField = (fieldName, property, value, formData, handleChange, opts = {}) => {
-  const { onEmployeFound, onEmployeCleared, required, error } = opts;
+  const { onEmployeFound, onEmployeCleared, required, error, pathPrefix = '', fieldStates = {}, allErrors = {}, globalReadOnly = false } = opts;
+  // Bug #2 fix : Séparateur underscore `_` pour les chemins imbriqués (cohérence DDL SQL)
+  const currentPath = pathPrefix ? `${pathPrefix}_${fieldName}` : fieldName;
 
-  // ─── Cas spécial : composant EmployeLookup pour le champ déclencheur ───
-  if (fieldName === 'idEmploye') {
+  // Masquer le champ s'il est caché
+  if (fieldStates[currentPath]?.isHidden) {
+    return null;
+  }
+
+  const isReadOnly = globalReadOnly || fieldStates[currentPath]?.isReadOnly || false;
+  const isRequired = required?.has ? required.has(currentPath) : !!required;
+
+  // Cas des groupes (Fieldset)
+  if (property.type === 'object') {
+    return (
+      <fieldset className="form-group" key={currentPath} style={{ margin: '1rem 0', padding: '1rem', border: '1px solid #ccc', borderRadius: '8px' }}>
+        {property.title && <legend style={{ fontWeight: 'bold', padding: '0 5px' }}>{property.title}</legend>}
+        {property.properties && Object.keys(property.properties).map(childName => {
+          const childProp = property.properties[childName];
+          // Bug #2 fix : Séparateur underscore `_` pour les chemins imbriqués (cohérence DDL SQL)
+          const childPath = `${currentPath}_${childName}`;
+          return renderField(childName, childProp, formData[childPath], formData, handleChange, {
+            ...opts,
+            pathPrefix: currentPath,
+            error: allErrors[childPath]
+          });
+        })}
+      </fieldset>
+    );
+  }
+
+  // Cas spécial : composant EmployeLookup pour idEmploye ou id_employe
+  if (currentPath === 'idEmploye' || currentPath === 'id_employe') {
     return (
       <EmployeLookup
-        key={fieldName}
+        key={currentPath}
         idValue={value ?? ''}
-        isRequired={required}
+        isRequired={isRequired}
+        isReadOnly={isReadOnly}
         onIdChange={(newId) =>
-          handleChange({ target: { name: fieldName, value: newId, type: 'number' } })
+          handleChange({ target: { name: currentPath, value: newId, type: 'number' } })
         }
         onEmployeFound={onEmployeFound ?? (() => { })}
         onEmployeCleared={onEmployeCleared ?? (() => { })}
@@ -302,28 +336,25 @@ export const renderField = (fieldName, property, value, formData, handleChange, 
     );
   }
 
+  // Déduction du controlType centralisée depuis le registre (register/index.js)
+  // Gère : select, date, checkbox, number, textarea, text, email, unsupported
+  const controlType = getFieldControl(property, fieldName);
 
-
-  // ─── Déduction du controlType depuis le JSON Schema ───
-  let controlType = 'text';
-  if (property.oneOf) controlType = 'select';
-  else if (property.format === 'date' || fieldName.toLowerCase().includes('date')) controlType = 'date';
-  else if (property.type === 'string' && (!property.maxLength || property.maxLength > 255)) controlType = 'textarea';
-  else if (property.type === 'boolean') controlType = 'checkbox';
-  else if (property.type === 'integer' || property.type === 'number') controlType = 'number';
-  else if (property.format === 'email') controlType = 'email';
+  const wrappedOnChange = (name, val) => {
+    handleChange({ target: { name: currentPath, value: val, type: controlType === 'checkbox' ? 'checkbox' : undefined, checked: controlType === 'checkbox' ? val : undefined } });
+  };
 
   return (
     <FieldRenderer
-      key={fieldName}
-      fieldName={fieldName}
+      key={currentPath}
+      fieldName={currentPath}
       field={property}
       controlType={controlType}
       value={value}
-      onChange={handleChange}
+      onChange={wrappedOnChange}
       formData={formData}
-      isReadOnly={false}
-      isRequired={required}
+      isReadOnly={isReadOnly}
+      isRequired={isRequired}
       error={error}
     />
   );

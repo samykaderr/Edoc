@@ -9,8 +9,20 @@
     {
       "code": "RQ-001",
       "schemaName": "requisition",
-      "title": "Requisition",
-      "description": "Formulaire de requisition pour un employé."
+      "title": "Réquisition",
+      "description": "Formulaire de réquisition pour un employé."
+    },
+    {
+      "code": "DM-001",
+      "schemaName": "decharge_materiel",
+      "title": "Décharge de Matériel",
+      "description": "Formulaire pour la prise en charge ou la restitution d'équipements professionnels."
+    },
+    {
+      "code": "OM-001",
+      "schemaName": "ordre_mission",
+      "title": "Ordre de Mission",
+      "description": "Formulaire pour les ordres de mission professionnels."
     }
   ]
 }

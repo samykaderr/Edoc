@@ -25,15 +25,22 @@ function DocumentTypeManager() {
             try {
                 setLoading(true);
 
-                // 🟢 1. Télécharger le vrai fichier JSON pour récupérer les colonnes (comme dans ViewForm.jsx)
+                // ✅ Étape 1 : Charger le JSON LOCALEMENT (source de vérité visuelle)
                 const schemaResponse = await fetch(`/schema/${schemaName}.json`);
                 if (!schemaResponse.ok) {
                     throw new Error(`Impossible de charger le fichier de configuration de ${schemaName}`);
                 }
                 const schemaData = await schemaResponse.json();
-                setSchema(schemaData); // On enregistre le schéma en local pour générer les colonnes
 
-                // 2. Alimenter le tableau avec les données de la base de données
+                // ✅ Étape 2 (immédiat) : Afficher les colonnes depuis le JSON LOCAL
+                setSchema(schemaData);
+
+                // ✅ Étape 3 : Sync non-bloquant (DDL MySQL, effet de bord non-critique)
+                formDataService.syncSchema(schemaName, schemaData).catch((syncErr) => {
+                    console.warn('[DocumentTypeManager] syncSchema non-critique échoué :', syncErr.message);
+                });
+
+                // ✅ Étape 4 : Récupérer uniquement les DONNÉES/ENREGISTREMENTS depuis la BDD
                 const response = await formDataService.all(schemaName);
                 if (response && response.length > 0) {
                     setDocuments(response);
@@ -50,6 +57,7 @@ function DocumentTypeManager() {
 
         if (schemaName) loadSchemaAndData();
     }, [schemaName]);
+
 
     // Bouton + Nouveau
     const handleNewClick = () => {
