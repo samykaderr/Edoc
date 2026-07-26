@@ -67,19 +67,20 @@ public class DataService {
 
         int i = 1;
         for (Map.Entry<String, Object> entry : payload.entrySet()) {
-            columns.add(validateIdentifier(entry.getKey()));
+            columns.add("`" + validateIdentifier(entry.getKey()) + "`");
             placeholders.add("?");
             values[i++] = entry.getValue();
         }
 
         String sql = String.format(
-                "INSERT INTO %s (%s) VALUES (%s)",
+                "INSERT INTO `%s` (%s) VALUES (%s)",
                 safeTableName, columns, placeholders
         );
 
         // 5. Exécuter l'insertion finale dans la table d'extension
         return dataRepository.executeInsert(sql, values);
     }
+
 
     private String validateIdentifier(String raw) {
         if (raw == null || raw.isBlank()) {

@@ -7,7 +7,7 @@
     "documentType": "REQUISITION",
     "properties": {
         "nom": {
-            "type": "sg",
+            "type": "string",
             "title": "nom"
         }
     },

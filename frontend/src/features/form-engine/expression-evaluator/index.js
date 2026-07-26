@@ -1,4 +1,3 @@
-
 /**
  * Vérifie si la structure du schéma JSON est valide et exploitable.
  *
@@ -6,14 +5,6 @@
  * @returns {boolean} True si le schéma est valide et contient au moins un champ, false sinon.
  */
 
-/**
- * Étape 0 : Validation Générique de l'En-tête et du Schéma Minimal
- * Vérifie que le schéma JSON possède toutes ses métadonnées obligatoires
- * et une structure valide, même si le formulaire ne contient aucun champ.
- * 
- * @param {object} schema - Le schéma JSON à valider.
- * @returns {boolean} - True si le schéma respecte la structure minimale, False sinon.
- */
 export function isValidSchemaStructure(schema) {
   if (!schema || typeof schema !== 'object' || Array.isArray(schema)) {
     return false;
@@ -38,40 +29,107 @@ export function isValidSchemaStructure(schema) {
 
   return true;
 }
+
 /**
- * Builds the set of required field names by evaluating static `required` and
- * conditional `allOf / if / then` rules against the current form values.
- *
- * @param {object} schema  // Parsed JSON Schema object.
- * @param {object} values  // Current form values keyed by field name.
- * @returns {Set<string>}  // Set of field names that are currently required.
+ * Builds the set of required field names (using flat paths).
  */
 export function buildRequiredFields(schema, values) {
-  // Étape 0 / Garde-fou : Validation stricte de la structure du schéma
   if (!isValidSchemaStructure(schema)) {
-    throw new Error("Erreur fatale : Le schéma fourni est vide ou sa structure est invalide. Impossible d'évaluer les conditions du formulaire.");
+    throw new Error("Erreur fatale : Le schéma fourni est vide ou sa structure est invalide.");
   }
 
-  const requiredFields = new Set(schema?.required || []);
+  const requiredFields = new Set();
 
-  if (!Array.isArray(schema?.allOf)) {
-    return requiredFields;
-  }
-
-  schema.allOf.forEach((rule) => {
-    const conditionProperties = rule?.if?.properties || {};
-    const conditionEntries = Object.entries(conditionProperties);
-
-    if (conditionEntries.length === 0) return;
-
-    const isMatch = conditionEntries.every(
-      ([fieldName, condition]) => values[fieldName] === condition?.const,
-    );
-
-    if (isMatch && Array.isArray(rule?.then?.required)) {
-      rule.then.required.forEach((fieldName) => requiredFields.add(fieldName));
+  const traverse = (props, requiredArr, prefix = '') => {
+    if (Array.isArray(requiredArr)) {
+      requiredArr.forEach(req => requiredFields.add(prefix ? `${prefix}_${req}` : req));
     }
-  });
+    if (props) {
+      Object.entries(props).forEach(([key, field]) => {
+        if (field.type === 'object' && field.properties) {
+          const path = prefix ? `${prefix}_${key}` : key;
+          traverse(field.properties, field.required, path);
+        }
+      });
+    }
+  };
+
+  traverse(schema.properties, schema.required);
+
+  if (Array.isArray(schema.allOf)) {
+    schema.allOf.forEach((rule) => {
+      const conditionProperties = rule?.if?.properties || {};
+      const conditionEntries = Object.entries(conditionProperties);
+
+      if (conditionEntries.length === 0) return;
+
+      const isMatch = conditionEntries.every(
+        ([fieldName, condition]) => values[fieldName] === condition?.const,
+      );
+
+      if (isMatch && Array.isArray(rule?.then?.required)) {
+        rule.then.required.forEach((fieldName) => requiredFields.add(fieldName));
+      }
+    });
+  }
 
   return requiredFields;
+}
+
+/**
+ * Evaluates field states (isHidden, isReadOnly) statically and dynamically.
+ */
+export function evaluateFieldStates(schema, formData) {
+  const states = {};
+
+  const traverse = (props, prefix = '') => {
+    if (!props) return;
+    Object.entries(props).forEach(([key, field]) => {
+      const path = prefix ? `${prefix}_${key}` : key;
+      
+      states[path] = {
+        isHidden: !!field.hidden,
+        isReadOnly: !!field.readOnly || !!field.disabled
+      };
+
+      if (field.type === 'object' && field.properties) {
+        traverse(field.properties, path);
+      }
+    });
+  };
+  
+  if (schema.properties) traverse(schema.properties);
+
+  if (Array.isArray(schema.allOf)) {
+    schema.allOf.forEach(rule => {
+      const conditionProps = rule?.if?.properties || {};
+      const conditionEntries = Object.entries(conditionProps);
+      
+      if (conditionEntries.length === 0) return;
+
+      const isMatch = conditionEntries.every(([fieldName, condition]) => {
+        return formData[fieldName] === condition?.const;
+      });
+
+      if (isMatch && rule?.then?.properties) {
+        const applyThenStates = (props, prefix = '') => {
+          Object.entries(props).forEach(([key, field]) => {
+            const path = prefix ? `${prefix}_${key}` : key;
+            if (!states[path]) states[path] = { isHidden: false, isReadOnly: false };
+            
+            if (field.hidden !== undefined) states[path].isHidden = field.hidden;
+            if (field.readOnly !== undefined) states[path].isReadOnly = field.readOnly;
+            if (field.disabled !== undefined) states[path].isReadOnly = field.disabled;
+
+            if (field.properties) {
+              applyThenStates(field.properties, path);
+            }
+          });
+        };
+        applyThenStates(rule.then.properties);
+      }
+    });
+  }
+
+  return states;
 }

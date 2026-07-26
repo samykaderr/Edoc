@@ -9,14 +9,17 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * FormDataController — Responsabilité unique : DML (manipulation des données).
+ * FormDataController — Endpoints DML (INSERT / SELECT) alignés sur la convention Frontend.
  *
- * Ce contrôleur est désormais aligné à 100% sur les URLs du schéma officiel,
- * est ouvert aux requêtes Cross-Origin, et délègue tout au DataService.
+ * Convention : le nom de table est un path-variable dans l'URL (snake_case slugifié).
+ * Le payload est envoyé directement dans le body (sans wrapper { "table":..., "payload":... }).
+ *
+ * GET  /api/v1/form-data/{tableName}  → retourne toutes les lignes
+ * POST /api/v1/form-data/{tableName}  → insère un enregistrement
  */
 @RestController
-@RequestMapping("/api/v1") // 🔄 Changé pour correspondre exactement au schéma (/api/v1/all et /api/v1/insert)
-@CrossOrigin(origins = "*")   // 🌐 Ajouté pour permettre la communication avec le Front-end React
+@RequestMapping("/api/v1/form-data")
+@CrossOrigin(origins = "*")
 public class FormDataController {
 
     private final DataService dataService;
@@ -25,51 +28,46 @@ public class FormDataController {
         this.dataService = dataService;
     }
 
-    // =========================================================================
-    // GET /api/v1/all?table=nom_table
-    // =========================================================================
     /**
-     * Retourne toutes les lignes d'une table sous forme de liste JSON.
+     * GET /api/v1/form-data/{tableName}
+     * Récupère toutes les lignes enregistrées pour une table de document donnée.
      */
-    @GetMapping("/all")
-    public ResponseEntity<List<Map<String, Object>>> getAll(
-            @RequestParam(name = "table") String table) {
-
-        List<Map<String, Object>> rows = dataService.findAll(table);
-        return ResponseEntity.ok(rows);
+    @GetMapping("/{tableName}")
+    public ResponseEntity<List<Map<String, Object>>> getAllData(@PathVariable String tableName) {
+        List<Map<String, Object>> records = dataService.findAll(tableName);
+        return ResponseEntity.ok(records);
     }
 
-    // =========================================================================
-    // POST /api/v1/insert
-    // =========================================================================
     /**
-     * Insère un enregistrement dans la table cible à partir d'un payload JSON brut validé par le Front.
+     * POST /api/v1/form-data/{tableName}
+     * Insère un nouvel enregistrement dans la table du document.
      */
-    @PostMapping("/insert")
-    @SuppressWarnings("unchecked")
-    public ResponseEntity<Map<String, Object>> insert(@RequestBody Map<String, Object> body) {
-        // Extraction sécurisée des deux clés requises
-        Object tableRaw   = body.get("table");
-        Object payloadRaw = body.get("payload");
+    @PostMapping("/{tableName}")
+    public ResponseEntity<Map<String, Object>> insertData(
+            @PathVariable String tableName,
+            @RequestBody Map<String, Object> payload) {
 
-        if (tableRaw == null || tableRaw.toString().isBlank()) {
-            throw new IllegalArgumentException("Le champ 'table' est requis dans le body.");
+        try {
+            dataService.insert(tableName, payload);
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(Map.of(
+                            "status", "SUCCESS",
+                            "message", "Données enregistrées avec succès dans la table : " + tableName
+                    ));
+        } catch (org.springframework.dao.DataAccessException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of(
+                            "status", "ERROR",
+                            "error", "Erreur SQL lors de l'insertion. Vérifiez que la structure du JSON correspond aux colonnes.",
+                            "details", e.getMessage() != null ? e.getMessage() : "Unknown DB error"
+                    ));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of(
+                            "status", "ERROR",
+                            "error", "Erreur interne lors de la sauvegarde.",
+                            "details", e.getMessage() != null ? e.getMessage() : "Unknown error"
+                    ));
         }
-        if (!(payloadRaw instanceof Map)) {
-            throw new IllegalArgumentException("Le champ 'payload' doit être un objet JSON.");
-        }
-
-        String tableName            = tableRaw.toString().trim();
-        Map<String, Object> payload = (Map<String, Object>) payloadRaw;
-
-        int inserted = dataService.insert(tableName, payload);
-
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(Map.of(
-                        "message",       "Enregistrement inséré avec succès.",
-                        "table",         tableName,
-                        "rowsInserted",  inserted
-                ));
     }
 }

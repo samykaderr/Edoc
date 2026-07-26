@@ -12,47 +12,43 @@ function DocumentsList() {
   const { documentTypes: schemas } = useDocuments();
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
+  // Bug #9 fix : Ajout d'un état d'erreur explicite au lieu du masquage par mockData
+  const [fetchError, setFetchError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [documentType, setDocumentType] = useState(initialType);
-
-  // Données mockées pour correspondre à l'image si l'API est vide ou échoue
-  const mockData = [
-    { id: 'REQ-1042', type: 'Demande de Congé', date: '2023-10-24', status: 'Nouveau', originalId: 'demande_conge' },
-    { id: 'REQ-1041', type: 'Q3 Financial Report', date: '2023-10-20', status: 'Processed', originalId: 'demande_conge' },
-    { id: 'REQ-1040', type: 'Vendor Invoice #8841', date: '2023-10-18', status: 'Archived', originalId: 'demande_conge' },
-    { id: 'REQ-1039', type: 'Employee Onboarding Pack', date: '2023-10-15', status: 'Nouveau', originalId: 'demande_conge' },
-  ];
 
   useEffect(() => {
     async function fetchData() {
       try {
-        // On récupère les données de la table correspondante au type (ou 'default_table' par défaut)
-        // ATTENTION: La nouvelle API (formDataService.all) attend un nom de table. On le prend du type, ou si vide, on peut lister tout selon votre architecture.
-        // Puisque nous n'avons pas la table exacte, on demande une par défaut pour l'instant
-        const response = await formDataService.all('test');
-        // Si l'API retourne des données, on essaie de les mapper, sinon on utilise les mocks.
+        setFetchError('');
+        // Bug #9 fix : On passe le vrai tableName depuis documentType si disponible,
+        // sinon on charge un tableau vide - pas de fallback sur mockData qui masquait les erreurs.
+        const tableToQuery = documentType || 'documents';
+        const response = await formDataService.all(tableToQuery);
         if (response && response.length > 0) {
           const mapped = response.map((item, index) => ({
             id: item.id || `REQ-${1000 + index}`,
             type: item.documentType || item.schemaName || 'Document générique',
             schemaName: item.schemaName || item.documentType || '',
-            date: item.createdAt ? new Date(item.createdAt).toISOString().split('T')[0] : '2023-10-24',
-            status: item.status || 'Nouveau',
+            date: item.createdAt ? new Date(item.createdAt).toISOString().split('T')[0] : item.created_at || '-',
+            status: item.status || item.statut || 'Nouveau',
             originalId: item.id
           }));
           setDocuments(mapped);
         } else {
-          setDocuments(mockData);
+          setDocuments([]);
         }
       } catch (error) {
-        console.error("Erreur de récupération des documents, utilisation des mocks", error);
-        setDocuments(mockData);
+        // Bug #9 fix : Affichage clair de l'erreur au lieu du retour silencieux sur mockData
+        console.error("Erreur de récupération des documents", error);
+        setFetchError(`Impossible de charger les documents : ${error.message}`);
+        setDocuments([]);
       } finally {
         setLoading(false);
       }
     }
     fetchData();
-  }, []);
+  }, [documentType]);
 
   useEffect(() => {
     if (initialType) setDocumentType(initialType);
@@ -83,6 +79,22 @@ function DocumentsList() {
 
   return (
     <main className="app-shell desktop-only" style={{ padding: '2rem', height: '100%', overflowY: 'auto' }}>
+
+      {/* Bug #9 fix : Affichage clair des erreurs backend au lieu du masquage par mockData */}
+      {fetchError && (
+        <div style={{
+          padding: '1rem 1.25rem',
+          marginBottom: '1.5rem',
+          backgroundColor: '#fce8e6',
+          border: '1px solid #f28b82',
+          borderRadius: '8px',
+          color: '#c5221f',
+          fontWeight: 500,
+          fontSize: '0.9rem'
+        }}>
+          ⚠️ {fetchError}
+        </div>
+      )}
 
       {/* Barre de filtres */}
       <div className="filter-bar" style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', alignItems: 'flex-end', justifyContent: 'space-between' }}>
