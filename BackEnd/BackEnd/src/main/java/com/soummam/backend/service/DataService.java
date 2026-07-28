@@ -1,19 +1,22 @@
 package com.soummam.backend.service;
 
 import com.soummam.backend.exception.TableNotFoundException;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.sql.PreparedStatement;
+import java.sql.Statement;
 import java.util.List;
 import java.util.Map;
 import java.util.StringJoiner;
 
 /**
- * DataService — Responsabilité unique : DML dynamique (INSERT / SELECT).
- *
- * Ce service ignore totalement la structure des formulaires. Il reçoit du JSON brut
- * (sous forme de Map Java) et construit dynamiquement les requêtes SQL paramétrées.
- * Aucune entité rigide (Conge, Document, etc.) n'est référencée ici.
+ * DataService — Responsabilité : DML dynamique (INSERT / SELECT)
+ * avec gestion de la table mère t_document.
  */
 @Service
 public class DataService {
@@ -30,13 +33,6 @@ public class DataService {
     // Lecture
     // =========================================================================
 
-    /**
-     * Retourne toutes les lignes d'une table sous forme de liste de Map.
-     * Chaque Map représente une ligne : { "colonne": valeur, ... }
-     *
-     * @param tableName Nom de la table cible (validé avant exécution)
-     * @return Liste de Map<String, Object> — désérialisable directement en JSON
-     */
     public List<Map<String, Object>> findAll(String tableName) {
         String safe = validateIdentifier(tableName);
 
@@ -47,18 +43,36 @@ public class DataService {
         return jdbc.queryForList("SELECT * FROM " + safe);
     }
 
+    /**
+     * Récupère une seule ligne d'une table dynamique par son identifiant.
+     *
+     * @param tableName nom de la table (validé contre l'injection SQL)
+     * @param id        valeur de la colonne {@code id}
+     * @return la ligne sous forme de Map ou lance {@link EmptyResultDataAccessException} si introuvable
+     */
+    public Map<String, Object> findById(String tableName, String id) {
+        String safe = validateIdentifier(tableName);
+
+        if (!tableExists(safe)) {
+            throw new TableNotFoundException(safe);
+        }
+
+        String sql = "SELECT * FROM " + safe + " WHERE id = ?";
+        List<Map<String, Object>> results = jdbc.queryForList(sql, id);
+
+        if (results.isEmpty()) {
+            throw new EmptyResultDataAccessException(
+                    "Aucun document avec l'id '" + id + "' dans la table '" + safe + "'.", 1);
+        }
+
+        return results.get(0);
+    }
+
     // =========================================================================
-    // Écriture
+    // Écriture (Transactionnelle avec Table Mère t_document)
     // =========================================================================
 
-    /**
-     * Insère dynamiquement un enregistrement dans la table cible.
-     * Construit le INSERT en utilisant uniquement les clés/valeurs du payload.
-     *
-     * @param tableName Nom de la table cible
-     * @param payload   Map des données du formulaire { "champ1": val1, "champ2": val2, ... }
-     * @return Nombre de lignes insérées (toujours 1 en cas de succès)
-     */
+    @Transactional
     public int insert(String tableName, Map<String, Object> payload) {
         String safe = validateIdentifier(tableName);
 
@@ -70,7 +84,52 @@ public class DataService {
             throw new IllegalArgumentException("Le payload ne peut pas être vide.");
         }
 
-        // Construction sécurisée du INSERT avec colonnes et placeholders dynamiques
+        // Si la table cible n'est ni t_document ni t_employe, on enregistre d'abord dans t_document
+        if (!"t_document".equalsIgnoreCase(safe) && !"t_employe".equalsIgnoreCase(safe)) {
+
+            // 1. Garantir que la table fille possède la colonne document_id
+            ensureColumnExists(safe, "document_id", "INT");
+
+            // 2. Extraire l'id_employe s'il est présent dans le payload (ex: idemploye ou id_employe)
+            Object idEmployeObj = payload.get("idemploye");
+            if (idEmployeObj == null) {
+                idEmployeObj = payload.get("id_employe");
+            }
+
+            Integer idEmploye = null;
+            if (idEmployeObj != null) {
+                try {
+                    idEmploye = Integer.parseInt(idEmployeObj.toString());
+                } catch (NumberFormatException ignored) {}
+            }
+
+            String statut = payload.getOrDefault("statut", "PENDING").toString();
+
+            // 3. Insertion dans t_document
+            String sqlDoc = "INSERT INTO `t_document` (`type_document`, `id_employe`, `statut`) VALUES (?, ?, ?)";
+            KeyHolder keyHolder = new GeneratedKeyHolder();
+
+            final Integer finalIdEmploye = idEmploye;
+            jdbc.update(connection -> {
+                PreparedStatement ps = connection.prepareStatement(sqlDoc, Statement.RETURN_GENERATED_KEYS);
+                ps.setString(1, safe);
+                if (finalIdEmploye != null) {
+                    ps.setInt(2, finalIdEmploye);
+                } else {
+                    ps.setNull(2, java.sql.Types.INTEGER);
+                }
+                ps.setString(3, statut);
+                return ps;
+            }, keyHolder);
+
+            // 4. Injecter l'id généré de t_document dans le payload de la table fille
+            Number generatedId = keyHolder.getKey();
+            if (generatedId != null) {
+                payload.put("document_id", generatedId.intValue());
+            }
+        }
+
+        // 5. Construction et exécution de l'INSERT dynamique habituel dans la table fille
         StringJoiner columns     = new StringJoiner(", ");
         StringJoiner placeholders = new StringJoiner(", ");
         Object[]     values      = new Object[payload.size()];
@@ -96,15 +155,24 @@ public class DataService {
 
     private boolean tableExists(String tableName) {
         String sql = "SELECT COUNT(*) FROM information_schema.tables " +
-                     "WHERE table_schema = DATABASE() AND table_name = ?";
+                "WHERE table_schema = DATABASE() AND table_name = ?";
         Integer count = jdbc.queryForObject(sql, Integer.class, tableName);
         return count != null && count > 0;
     }
 
     /**
-     * Valide et normalise un identifiant SQL (nom de table ou de colonne).
-     * Protège contre l'injection SQL sur les noms non paramétrables.
+     * Ajoute une colonne à la table si elle n'existe pas encore.
      */
+    private void ensureColumnExists(String tableName, String columnName, String columnType) {
+        String checkSql = "SELECT COUNT(*) FROM information_schema.columns " +
+                "WHERE table_schema = DATABASE() AND table_name = ? AND column_name = ?";
+        Integer count = jdbc.queryForObject(checkSql, Integer.class, tableName, columnName);
+        if (count == null || count == 0) {
+            String alterSql = String.format("ALTER TABLE `%s` ADD COLUMN `%s` %s NULL", tableName, columnName, columnType);
+            jdbc.execute(alterSql);
+        }
+    }
+
     private String validateIdentifier(String raw) {
         if (raw == null || raw.isBlank()) {
             throw new IllegalArgumentException("L'identifiant SQL ne peut pas être vide.");

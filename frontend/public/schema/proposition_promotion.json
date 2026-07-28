@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://laiterie-soummam.com/schemas/ordre-mission.json",
+  "title": "Ordre de Mission",
+  "description": "Schéma de l'ordre de mission pour les déplacements professionnels de la SARL LAITERIE SOUMMAM",
+  "type": "object",
+  "documentType":"PROPOSITION_PROMOTION",
+  "required": [
+    "numero_ordre",
+    "employe",
+    "motif_deplacement",
+    "date_depart",
+    "destination",
+    "type_deplacement",
+    "date_creation",
+    "vehicule"
+  ],
+  "properties": {
+    "numero_ordre": {
+      "type": "string",
+      "description": "Numéro de l'ordre de mission (format: /Mis/AA/)",
+      "pattern": "^/Mis/[0-9]{2}/$"
+    },
+    "employe": {
+      "type": "object",
+      "required": ["nom", "prenom", "fonction"],
+      "properties": {
+        "nom": { "type": "string" },
+        "prenom": { "type": "string" },
+        "fonction": { "type": "string" },
+        "service": { "type": "string" }
+      }
+    },
+    "motif_deplacement": { "type": "string", "minLength": 1 },
+    "date_depart": { "type": "string", "format": "date" },
+    "date_retour": { "type": "string", "format": "date" },
+    "destination": { "type": "string" },
+    "type_deplacement": {
+      "type": "string",
+      "enum": ["Mission", "Formation", "Réunion", "Autre"]
+    },
+    "vehicule": {
+      "type": "object",
+      "required": ["immatriculation"],
+      "properties": {
+        "immatriculation": { "type": "string" },
+        "type_vehicule": { "type": "string" }
+      }
+    },
+    "date_creation": { "type": "string", "format": "date" },
+    "lieu_creation": { "type": "string", "default": "Akbou" },
+    "visa_responsable": {
+      "type": "object",
+      "properties": {
+        "signataire": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "signature": { "type": "boolean" }
+      }
+    },
+    "copies_destinataires": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["DAF (PA)", "DAF (P1)", "Dossier + Chrono"]
+      }
+    }
+  }
+}

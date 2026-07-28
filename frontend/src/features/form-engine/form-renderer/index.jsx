@@ -69,11 +69,34 @@ function FormEngine({ schema, onSubmit, initialData = null, globalReadOnly = fal
   // --- Sync des donnees en mode consultation / edition (REVIEW) ---
   useEffect(() => {
     if (initialData) {
-      setFormData(initialData);
+      // 1. Construire un mapping "minuscule" -> "camelCase d'origine du schema"
+      const pathToSchemaKey = {};
+      const buildMap = (props, prefix = '') => {
+        Object.keys(props).forEach((fieldName) => {
+          const path = prefix ? `${prefix}_${fieldName}` : fieldName;
+          pathToSchemaKey[path.toLowerCase()] = path;
+          if (props[fieldName].type === 'object' && props[fieldName].properties) {
+            buildMap(props[fieldName].properties, path);
+          }
+        });
+      };
+      
+      if (resolvedSchema && resolvedSchema.properties) {
+         buildMap(resolvedSchema.properties);
+      }
+      
+      // 2. Normaliser initialData avec les clés du schéma
+      const normalizedData = {};
+      Object.keys(initialData).forEach(key => {
+         const schemaKey = pathToSchemaKey[key.toLowerCase()] || key;
+         normalizedData[schemaKey] = initialData[key];
+      });
+
+      setFormData(normalizedData);
       setErrors({});
       setSubmitError('');
     }
-  }, [initialData]);
+  }, [initialData, resolvedSchema]);
 
   // --- Calcul dynamique de la visibilite et des etats des champs ---
   const fieldStates = resolvedSchema ? evaluateFieldStates(resolvedSchema, formData) : {};
