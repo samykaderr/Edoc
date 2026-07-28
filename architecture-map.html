@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Architecture Map - Edoc Soummam</title>
+<style>
+  :root {
+    --bg: #121418; 
+    --panel: #1e222b; 
+    --panel-2: #282d37; 
+    --border: #3a4150;
+    --text: #f0f4f8; 
+    --muted: #94a3b8;
+    --client: #38bdf8; 
+    --route: #4ade80; 
+    --service: #c084fc;
+    --db: #fbbf24; 
+    --external: #f43f5e; 
+    --critical: #ef4444;
+    --accent: #f59e0b; 
+    --accent-2: #f97316;
+  }
+  
+  * { box-sizing: border-box; }
+  body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, sans-serif; overflow: hidden; display: flex; }
+  
+  #main { flex: 1; height: 100%; position: relative; overflow: hidden; display: flex; flex-direction: column; }
+  #sidebar { width: 350px; height: 100%; background: var(--panel); border-left: 1px solid var(--border); padding: 20px; overflow-y: auto; flex-shrink: 0; z-index: 10; box-shadow: -5px 0 20px rgba(0,0,0,0.4); }
+  
+  #toolbar { position: absolute; top: 12px; left: 12px; z-index: 10; display: flex; gap: 8px; flex-wrap: wrap; background: rgba(30, 34, 43, 0.9); backdrop-filter: blur(8px); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); }
+  .chip { background: var(--panel-2); border: 1px solid var(--border); color: var(--text); padding: 6px 14px; border-radius: 16px; cursor: pointer; font-size: 12px; font-weight: 600; user-select: none; transition: all 0.2s; }
+  .chip:hover { border-color: var(--accent); }
+  .chip.active { background: var(--accent); color: #000; border-color: var(--accent); }
+  
+  .controls { position: absolute; bottom: 20px; right: 20px; z-index: 10; display: flex; gap: 6px; }
+  .controls button { background: var(--panel); border: 1px solid var(--border); color: var(--text); padding: 8px 14px; cursor: pointer; border-radius: 6px; font-weight: bold; transition: background 0.2s; }
+  .controls button:hover { background: var(--panel-2); border-color: var(--muted); }
+  
+  #canvas { flex: 1; width: 100%; height: 100%; cursor: grab; }
+  #canvas:active { cursor: grabbing; }
+  
+  .node rect { stroke-width: 1.5; rx: 8; cursor: pointer; transition: filter 0.2s, stroke-width 0.2s; }
+  .node.critical rect { stroke-width: 2.5; }
+  .node:hover rect { filter: brightness(1.25); }
+  .node text { pointer-events: none; }
+  .node .label { font-weight: 700; font-size: 13px; fill: var(--text); }
+  .node .sub { font-size: 11px; fill: var(--muted); }
+  
+  .cluster rect { fill-opacity: 0.15; stroke-dasharray: 4 4; stroke: var(--border); rx: 10; pointer-events: none; }
+  .cluster text { fill: var(--muted); font-size: 11px; font-weight: 800; letter-spacing: 1.5px; pointer-events: none; }
+  
+  path.edge { fill: none; stroke-width: 1.8; opacity: 0.75; transition: opacity 0.2s; }
+  path.edge.critical { stroke: var(--critical); stroke-width: 2.2; opacity: 1; }
+  path.edge.api { stroke: var(--external); }
+  path.edge.db { stroke: var(--db); }
+  path.edge.mount { stroke: var(--route); }
+  path.edge.normal { stroke: var(--muted); }
+  
+  .edge-label { font-size: 10px; fill: var(--text); pointer-events: none; font-weight: 600; }
+  .edge-label-bg { fill: var(--bg); opacity: 0.9; rx: 4; }
+  
+  .badge-fix { fill: #22c55e; }
+  .badge-bug { fill: #ef4444; }
+  .badge-text { font-size: 10px; fill: white; font-weight: bold; text-anchor: middle; alignment-baseline: central; pointer-events: none; }
+
+  /* Dimming logic */
+  .dimmed { opacity: 0.15 !important; }
+  .dimmed-node rect { stroke: var(--border) !important; fill: transparent !important; }
+  
+  h2 { margin-top: 0; font-size: 18px; color: var(--accent); }
+  .sb-section { margin-top: 20px; }
+  .sb-title { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--muted); letter-spacing: 1px; margin-bottom: 8px; }
+  .sb-path { font-family: monospace; font-size: 11px; background: var(--bg); border: 1px solid var(--border); padding: 6px 8px; border-radius: 4px; word-break: break-all; color: var(--accent); }
+  ul { padding-left: 18px; margin: 0; font-size: 13px; color: var(--text); line-height: 1.5; }
+  li { margin-bottom: 6px; }
+  .bug-item { border-left: 3px solid var(--critical); padding-left: 8px; margin-bottom: 10px; font-size: 12px; background: rgba(239, 68, 68, 0.1); padding: 6px 8px; border-radius: 0 4px 4px 0; }
+  .fix-item { border-left: 3px solid #22c55e; padding-left: 8px; margin-bottom: 10px; font-size: 12px; background: rgba(34, 197, 94, 0.1); padding: 6px 8px; border-radius: 0 4px 4px 0; }
+</style>
+</head>
+<body>
+<div id="main">
+  <div id="toolbar"></div>
+  <div class="controls">
+    <button id="btn-fit">Ajuster</button>
+    <button id="btn-in">+</button>
+    <button id="btn-out">-</button>
+  </div>
+  <svg id="canvas">
+    <defs>
+      <marker id="arrow-normal" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <path d="M0,0 L10,5 L0,10 z" fill="var(--muted)" />
+      </marker>
+      <marker id="arrow-critical" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <path d="M0,0 L10,5 L0,10 z" fill="var(--critical)" />
+      </marker>
+      <marker id="arrow-api" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <path d="M0,0 L10,5 L0,10 z" fill="var(--external)" />
+      </marker>
+      <marker id="arrow-db" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <path d="M0,0 L10,5 L0,10 z" fill="var(--db)" />
+      </marker>
+      <marker id="arrow-route" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+        <path d="M0,0 L10,5 L0,10 z" fill="var(--route)" />
+      </marker>
+    </defs>
+    <g id="viewport"></g>
+  </svg>
+</div>
+<div id="sidebar"></div>
+
+<script>
+const clusters = [
+  { id: 'pages', label: 'Pages (React)', x: 50, y: 50, w: 220, h: 500, color: 'var(--client)' },
+  { id: 'form-engine', label: 'Form Engine', x: 350, y: 50, w: 220, h: 500, color: 'var(--client)' },
+  { id: 'api-clients', label: 'API Clients', x: 650, y: 50, w: 220, h: 500, color: 'var(--route)' },
+  { id: 'server-routes', label: 'Server Routes (Spring)', x: 950, y: 50, w: 220, h: 500, color: 'var(--route)' },
+  { id: 'services', label: 'Services', x: 1250, y: 50, w: 220, h: 500, color: 'var(--service)' },
+  { id: 'data', label: 'Data & Schemas', x: 1550, y: 50, w: 220, h: 500, color: 'var(--db)' }
+];
+
+const N = (id, cluster, label, sub, x, y, w, h, color, opts = {}) => ({
+  id, cluster, label, sub, x, y, w, h, color, ...opts
+});
+
+const nodes = [
+  // Pages
+  N('view-form', 'pages', 'ViewForm.jsx', 'Main form rendering view', 60, 100, 200, 50, 'var(--client)', {
+    role: 'Renders the form dynamically based on the schema, and coordinates submission.',
+    plain: 'The main page where users fill out forms like vacation requests. It asks the Form Engine to draw the inputs.',
+    path: 'frontend/src/pages/ViewForm.jsx:88',
+    notes: ['line:40, Calls syncSchema in a non-blocking catch block', 'line:88, Submits the flattened payload using formDataService'],
+    tag: ['overview', 'forms', 'critical', 'all'],
+    critical: true
+  }),
+  N('doc-manager', 'pages', 'DocumentTypeManager.jsx', 'Admin form management', 60, 200, 200, 50, 'var(--client)', {
+    role: 'Admin interface to view and synchronize JSON schemas into MySQL tables.',
+    plain: 'The admin dashboard where managers can see all available form types and manually sync their structure to the database.',
+    path: 'frontend/src/pages/DocumentTypeManager.jsx',
+    notes: ['Calls syncSchema directly for manual synchronisation'],
+    tag: ['overview', 'admin', 'all']
+  }),
+
+  // Form Engine
+  N('form-engine', 'form-engine', 'index.jsx (FormEngine)', 'Form orchestrator', 360, 100, 200, 50, 'var(--client)', {
+    role: 'Coordinates state, calculates field visibility, and builds the final submission payload.',
+    plain: 'The brain of the forms. It takes a JSON blueprint and turns it into a state machine, tracking user input and applying rules.',
+    path: 'frontend/src/features/form-engine/form-renderer/index.jsx:154',
+    notes: ['line:154, Flattens nested JSON objects using an underscore (e.g. periode_dateDebut) so they map 1:1 to SQL columns.', 'Uses validateFormData before submission'],
+    tag: ['overview', 'forms', 'critical', 'all'],
+    critical: true
+  }),
+  N('render', 'form-engine', 'render.jsx', 'Field renderer', 360, 200, 200, 50, 'var(--client)', {
+    role: 'Renders individual React input components based on JSON schema types.',
+    plain: 'Draws the actual text boxes, date pickers, and dropdowns on the screen.',
+    path: 'frontend/src/features/form-engine/form-renderer/render.jsx',
+    notes: ['Fetches Employee data dynamically if an employee ID field is present (via api.js)'],
+    tag: ['overview', 'forms', 'all']
+  }),
+  N('json-parser', 'form-engine', 'jsonParser.ts', 'Schema normalization', 360, 300, 200, 50, 'var(--client)', {
+    role: 'Parses raw JSON schema strings into objects and resolves references.',
+    plain: 'Reads the JSON files that define the forms and makes sure they are valid and understandable by the engine.',
+    path: 'frontend/src/features/form-engine/parser/jsonParser.ts',
+    notes: ['Also converts schemas into DDL payloads for DefinitionService'],
+    tag: ['forms', 'all']
+  }),
+
+  // API Clients
+  N('form-data-svc', 'api-clients', 'formDataService.js', 'CRUD client', 660, 100, 200, 50, 'var(--route)', {
+    role: 'Fetches records and posts new form entries to the backend.',
+    plain: 'The messenger that takes the finished form from the user and hands it to the server to be saved.',
+    path: 'frontend/src/services/formDataService.js:15',
+    notes: ['line:15, insert() now strictly requires application/json', 'Extracts detailed Spring Boot SQL errors if the 400 Bad Request has errorData.details'],
+    tag: ['overview', 'forms', 'critical', 'all'],
+    critical: true
+  }),
+  N('def-svc', 'api-clients', 'definitionService.js', 'DEAD: updateFields', 660, 200, 200, 50, 'var(--route)', {
+    role: 'Calls backend DDL endpoints to create or alter tables.',
+    plain: 'Tells the server to build new database tables when a new type of form is created.',
+    path: 'frontend/src/services/definitionService.js:45',
+    notes: ['line:45, updateFields() has zero live callers in the codebase. It is dead code.'],
+    tag: ['admin', 'all']
+  }),
+  N('api-js', 'api-clients', 'api.js', 'Axios instance', 660, 300, 200, 50, 'var(--route)', {
+    role: 'Base Axios client for API calls, primarily used for employee lookups.',
+    plain: 'A standard way for the app to talk to the server, mostly used right now to find employee details.',
+    path: 'frontend/src/services/api.js',
+    notes: ['Configured to hit /api which Vite proxies to localhost:8081'],
+    tag: ['all']
+  }),
+
+  // Server Routes
+  N('form-data-ctrl', 'server-routes', 'FormDataController.java', 'Dynamic DML endpoints', 960, 100, 200, 50, 'var(--route)', {
+    role: 'Provides /api/v1/form-data/{tableName} for dynamic inserts and selects.',
+    plain: 'The server receptionist that receives the form data and hands it to the database worker.',
+    path: 'BackEnd/BackEnd/src/main/java/com/soummam/backend/controller/FormDataController.java:46',
+    notes: ['line:50, Wraps insert in a try-catch to convert DataAccessException into a 400 Bad Request with SQL details instead of a raw 500 crash.'],
+    tag: ['overview', 'forms', 'critical', 'all'],
+    critical: true
+  }),
+  N('form-def-ctrl', 'server-routes', 'FormDefinitionController.java', 'Dynamic DDL endpoints', 960, 200, 200, 50, 'var(--route)', {
+    role: 'Provides /api/v1/definitions/* to sync JSON schemas with MySQL structures.',
+    plain: 'Receives instructions to build new database tables when the admins create a new form.',
+    path: 'BackEnd/BackEnd/src/main/java/com/soummam/backend/controller/FormDefinitionController.java',
+    notes: ['Endpoints match the frontend definitionService'],
+    tag: ['admin', 'all']
+  }),
+
+  // Services
+  N('data-svc', 'services', 'DataService.java', 'Dynamic SQL builder', 1260, 100, 200, 50, 'var(--service)', {
+    role: 'Validates inputs and builds dynamic INSERT statements, splitting data between master and detail tables.',
+    plain: 'The database worker that writes the actual SQL queries to save the form. It splits the work between a main table and a specific form table.',
+    path: 'BackEnd/BackEnd/src/main/java/com/soummam/backend/service/DataService.java:83',
+    notes: ['line:71, Uses a Master-Detail pattern (t_document + doc_xxx tables)', 'line:77, Iterates over payload entries and wraps column names in backticks (`) to prevent SQL reserved keyword conflicts (like "date" or "desc").'],
+    tag: ['overview', 'forms', 'critical', 'all'],
+    critical: true
+  }),
+  N('def-svc-java', 'services', 'DefinitionService.java', 'Schema to DDL mapper', 1260, 200, 200, 50, 'var(--service)', {
+    role: 'Parses nested JSON properties, flattening them with underscores to map to SQL columns.',
+    plain: 'Reads the JSON blueprint and figures out exactly what columns need to be created in the database.',
+    path: 'BackEnd/BackEnd/src/main/java/com/soummam/backend/service/DefinitionService.java:116',
+    notes: ['line:116, Recursively flattens objects (e.g. periode -> dateDebut becomes periode_datedebut). This matches FormEngine logic perfectly.', 'Forces lowercase column names.'],
+    tag: ['admin', 'all']
+  }),
+
+  // Data
+  N('data-repo', 'data', 'DataRepository.java', 'JdbcTemplate DML', 1560, 100, 200, 50, 'var(--db)', {
+    role: 'Executes transaction-safe inserts into t_document and the specific doc_xxx table.',
+    plain: 'The actual connection to the database that runs the insert commands.',
+    path: 'BackEnd/BackEnd/src/main/java/com/soummam/backend/repository/DataRepository.java',
+    notes: ['Uses JdbcTemplate instead of JPA because tables are completely dynamic'],
+    tag: ['overview', 'forms', 'critical', 'all'],
+    critical: true
+  }),
+  N('def-repo', 'data', 'DefinitionRepository.java', 'JdbcTemplate DDL', 1560, 200, 200, 50, 'var(--db)', {
+    role: 'Executes ALTER TABLE and CREATE TABLE commands.',
+    plain: 'The connection to the database that creates new tables and columns.',
+    path: 'BackEnd/BackEnd/src/main/java/com/soummam/backend/repository/DefinitionRepository.java:27',
+    notes: ['line:27, Creates tables with INT id as primary key (matching archi-exact architecture).'],
+    tag: ['admin', 'all']
+  }),
+  N('schema-json', 'data', 'demande_conge.json', 'Source of Truth', 1560, 300, 200, 50, 'var(--db)', {
+    role: 'JSON Schema file defining the form structure and validation rules.',
+    plain: 'The file that defines exactly what the vacation request form looks like and what fields it has.',
+    path: 'frontend/public/schema/demande_conge.json',
+    notes: ['Contains a nested "periode" object which proved tricky for column mapping.', 'This file is the single source of truth for the UI.'],
+    tag: ['overview', 'forms', 'critical', 'all'],
+    critical: true
+  })
+];
+
+const edges = [
+  // Form submission flow (Critical Path)
+  { from: 'view-form', to: 'schema-json', kind: 'critical', label: '1 → Loads schema', tag: ['overview', 'forms', 'critical', 'all'] },
+  { from: 'view-form', to: 'form-engine', kind: 'critical', label: '2 → Renders', tag: ['overview', 'forms', 'critical', 'all'] },
+  { from: 'form-engine', to: 'form-data-svc', kind: 'critical', label: '3 → POST flattened payload', tag: ['overview', 'forms', 'critical', 'all'] },
+  { from: 'form-data-svc', to: 'form-data-ctrl', kind: 'critical', label: '4 → HTTP POST /api/v1/...', tag: ['overview', 'forms', 'critical', 'all'] },
+  { from: 'form-data-ctrl', to: 'data-svc', kind: 'critical', label: '5 → insert()', tag: ['overview', 'forms', 'critical', 'all'] },
+  { from: 'data-svc', to: 'data-repo', kind: 'critical', label: '6 → jdbc.update()', tag: ['overview', 'forms', 'critical', 'all'] },
+
+  // Schema sync flow
+  { from: 'view-form', to: 'form-data-svc', kind: 'normal', label: 'syncSchema (non-blocking)', tag: ['forms', 'all'] },
+  { from: 'doc-manager', to: 'form-data-svc', kind: 'normal', label: 'manual syncSchema', tag: ['admin', 'all'] },
+  { from: 'form-data-svc', to: 'form-def-ctrl', kind: 'mount', label: 'HTTP POST /api/v1/definitions/sync', tag: ['admin', 'forms', 'all'] },
+  { from: 'form-def-ctrl', to: 'def-svc-java', kind: 'normal', label: 'syncSchema()', tag: ['admin', 'all'] },
+  { from: 'def-svc-java', to: 'def-repo', kind: 'db', label: 'executeAddColumn()', tag: ['admin', 'all'] },
+
+  // Form rendering internals
+  { from: 'form-engine', to: 'render', kind: 'normal', label: 'renderField()', tag: ['forms', 'all'] },
+  { from: 'render', to: 'api-js', kind: 'normal', label: 'getEmployeById()', tag: ['forms', 'all'] },
+  
+  // Dead code
+  { from: 'doc-manager', to: 'def-svc', kind: 'normal', label: 'creerTable (via DDL builder)', tag: ['admin', 'all'] }
+];
+
+const FIXES = {
+  'data-svc': [{ n: 1, t: 'Added backticks around SQL identifiers to prevent keyword conflicts (e.g. "date", "desc").' }],
+  'form-data-ctrl': [{ n: 1, t: 'Added try-catch to intercept DataAccessException and return 400 Bad Request with details, replacing 500 error.' }],
+  'form-data-svc': [{ n: 1, t: 'Extracts errorData.details from HTTP 400 to show users the exact MySQL error (e.g. Unknown column).' }],
+  'data-repo': [{ n: 1, t: 'Resolved git merge conflicts between main and archi-exact branches.' }]
+};
+
+const KNOWN_BUGS = {
+  'def-svc': [{ sev: 'low', ref: 'updateFields', t: 'updateFields has zero callers. It is dead code.' }]
+};
+
+// =========================================================================
+// Rendering Engine
+// =========================================================================
+let currentFilter = 'overview';
+let activeNode = null;
+
+const svg = document.getElementById('canvas');
+const viewport = document.getElementById('viewport');
+const sidebar = document.getElementById('sidebar');
+
+// 1. Draw Clusters
+clusters.forEach(c => {
+  const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  g.className = 'cluster';
+  g.innerHTML = `
+    <rect x="${c.x}" y="${c.y}" width="${c.w}" height="${c.h}" fill="${c.color}"></rect>
+    <text x="${c.x + 10}" y="${c.y - 10}">${c.label.toUpperCase()}</text>
+  `;
+  viewport.appendChild(g);
+});
+
+// 2. Draw Edges
+const edgeG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+viewport.appendChild(edgeG);
+
+function drawEdges() {
+  edgeG.innerHTML = '';
+  edges.forEach(e => {
+    if (!e.tag.includes(currentFilter) && currentFilter !== 'roadmap') return;
+    
+    const fromN = nodes.find(n => n.id === e.from);
+    const toN = nodes.find(n => n.id === e.to);
+    if (!fromN || !toN) return;
+    
+    const isDimmed = activeNode && (e.from !== activeNode && e.to !== activeNode);
+    if (currentFilter === 'roadmap' && !FIXES[e.from] && !KNOWN_BUGS[e.from] && !FIXES[e.to] && !KNOWN_BUGS[e.to]) {
+      return;
+    }
+
+    const startX = fromN.x + fromN.w;
+    const startY = fromN.y + fromN.h / 2;
+    const endX = toN.x;
+    const endY = toN.y + toN.h / 2;
+    
+    const dist = Math.max(Math.abs(endX - startX) / 2, 50);
+    const pathD = `M ${startX} ${startY} C ${startX + dist} ${startY}, ${endX - dist} ${endY}, ${endX} ${endY}`;
+    
+    let marker = 'arrow-normal';
+    if (e.kind === 'critical') marker = 'arrow-critical';
+    else if (e.kind === 'api') marker = 'arrow-api';
+    else if (e.kind === 'db') marker = 'arrow-db';
+    else if (e.kind === 'mount') marker = 'arrow-route';
+    
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', pathD);
+    path.className = `edge ${e.kind} ${isDimmed ? 'dimmed' : ''}`;
+    path.setAttribute('marker-end', `url(#${marker})`);
+    
+    const midX = startX + (endX - startX) / 2;
+    const midY = startY + (endY - startY) / 2;
+    
+    const textBg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    textBg.className = `edge-label-bg ${isDimmed ? 'dimmed' : ''}`;
+    
+    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    text.className = `edge-label ${isDimmed ? 'dimmed' : ''}`;
+    text.setAttribute('x', midX);
+    text.setAttribute('y', midY + 3);
+    text.setAttribute('text-anchor', 'middle');
+    text.textContent = e.label;
+    
+    edgeG.appendChild(path);
+    edgeG.appendChild(text);
+    
+    setTimeout(() => {
+      if (text.parentNode === edgeG) {
+        try {
+          const bbox = text.getBBox();
+          textBg.setAttribute('x', bbox.x - 4);
+          textBg.setAttribute('y', bbox.y - 2);
+          textBg.setAttribute('width', bbox.width + 8);
+          textBg.setAttribute('height', bbox.height + 4);
+          edgeG.insertBefore(textBg, text);
+        } catch(err) {}
+      }
+    }, 0);
+  });
+}
+
+// 3. Draw Nodes
+const nodeG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+viewport.appendChild(nodeG);
+
+function drawNodes() {
+  nodeG.innerHTML = '';
+  nodes.forEach(n => {
+    let visible = n.tag.includes(currentFilter);
+    if (currentFilter === 'roadmap') {
+      visible = FIXES[n.id] || KNOWN_BUGS[n.id];
+    }
+    
+    const isDimmed = activeNode && activeNode !== n.id && !edges.some(e => (e.from === activeNode && e.to === n.id) || (e.to === activeNode && e.from === n.id));
+    
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    g.className = `node ${n.critical ? 'critical' : ''} ${isDimmed ? 'dimmed-node' : ''}`;
+    if (!visible && currentFilter !== 'all') g.style.display = 'none';
+    
+    g.innerHTML = `
+      <rect x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" fill="var(--panel)" stroke="${n.color}"></rect>
+      <text x="${n.x + 12}" y="${n.y + 22}" class="label">${n.label}</text>
+      <text x="${n.x + 12}" y="${n.y + 38}" class="sub">${n.sub}</text>
+    `;
+    
+    let bx = n.x + n.w - 12;
+    if (FIXES[n.id]) {
+      g.innerHTML += `
+        <circle cx="${bx}" cy="${n.y + 12}" r="8" class="badge-fix"></circle>
+        <text x="${bx}" y="${n.y + 12}" class="badge-text">${FIXES[n.id].length}</text>
+      `;
+      bx -= 20;
+    }
+    if (KNOWN_BUGS[n.id]) {
+      g.innerHTML += `
+        <circle cx="${bx}" cy="${n.y + 12}" r="8" class="badge-bug"></circle>
+        <text x="${bx}" y="${n.y + 12}" class="badge-text">${KNOWN_BUGS[n.id].length}</text>
+      `;
+    }
+    
+    g.onclick = (e) => {
+      e.stopPropagation();
+      activeNode = activeNode === n.id ? null : n.id;
+      render();
+    };
+    
+    nodeG.appendChild(g);
+  });
+}
+
+// 4. Sidebar Logic
+function renderSidebar() {
+  if (activeNode) {
+    const n = nodes.find(x => x.id === activeNode);
+    let html = `
+      <h2>${n.label}</h2>
+      <div class="sb-path">${n.path}</div>
+      
+      <div class="sb-section">
+        <div class="sb-title">Technical Role</div>
+        <div>${n.role}</div>
+      </div>
+      
+      <div class="sb-section">
+        <div class="sb-title">Plain English</div>
+        <div>${n.plain}</div>
+      </div>
+      
+      <div class="sb-section">
+        <div class="sb-title">Implementation Notes</div>
+        <ul>${n.notes.map(x => `<li>${x}</li>`).join('')}</ul>
+      </div>
+    `;
+    
+    if (FIXES[n.id] || KNOWN_BUGS[n.id]) {
+      html += `<div class="sb-section"><div class="sb-title">Roadmap & Fixes</div>`;
+      if (KNOWN_BUGS[n.id]) {
+        KNOWN_BUGS[n.id].forEach(b => {
+          html += `<div class="bug-item"><strong>BUG (${b.sev}):</strong> ${b.t}<br><small>${b.ref}</small></div>`;
+        });
+      }
+      if (FIXES[n.id]) {
+        FIXES[n.id].forEach(f => {
+          html += `<div class="fix-item"><strong>FIX:</strong> ${f.t}</div>`;
+        });
+      }
+      html += `</div>`;
+    }
+    
+    sidebar.innerHTML = html;
+  } else {
+    sidebar.innerHTML = `
+      <h2>Architecture Overview</h2>
+      <p>This map documents the <strong>Edoc Soummam</strong> dynamic forms architecture, tracing how a JSON schema becomes a React form and is ultimately saved into a dynamically constructed MySQL table.</p>
+      
+      <div class="sb-section">
+        <div class="sb-title">Notable findings from this map</div>
+        <ul>
+          <li><strong>Dead Code Located:</strong> <code>updateFields</code> in <code>definitionService.js</code> has zero callers and appears to be abandoned.</li>
+          <li><strong>Clever Architectural Seam:</strong> The flattening of nested JSON objects (e.g., <code>periode: { dateDebut }</code> -> <code>periode_dateDebut</code>) happens in two completely isolated places (FormEngine and DefinitionService) using identical underscore logic. This keeps the schema in sync with the database columns automatically without a complex mapping layer!</li>
+          <li><strong>Critical Vulnerability Fixed:</strong> The dynamic SQL builder in <code>DataService.java</code> now uses backticks (<code>\`\`</code>) for column names, preventing crashes when users define forms with standard SQL reserved words (like "date" or "desc").</li>
+          <li><strong>Resilient Error Handling:</strong> The HTTP 400 response from <code>FormDataController</code> now includes detailed SQL error data which the frontend parser reads, replacing cryptic 500 crashes with actionable UI messages.</li>
+          <li><strong>Master-Detail Merge:</strong> The system successfully handles a master-detail split (<code>t_document</code> vs <code>doc_xxx</code>) dynamically.</li>
+        </ul>
+      </div>
+      <p style="color: var(--muted); font-size: 12px; margin-top: 30px;">Click any node to see its details and highlight its connections. Drag the background to pan, use mouse wheel to zoom.</p>
+    `;
+  }
+}
+
+// 5. Toolbar & Filter Logic
+const allTags = new Set();
+nodes.forEach(n => n.tag.forEach(t => allTags.add(t)));
+edges.forEach(e => e.tag.forEach(t => allTags.add(t)));
+
+const toolbar = document.getElementById('toolbar');
+const sortedTags = ['overview', 'critical', 'forms', 'admin', 'all', 'roadmap'];
+
+sortedTags.forEach(t => {
+  if (t !== 'roadmap' && !allTags.has(t)) return;
+  const chip = document.createElement('div');
+  chip.className = `chip ${currentFilter === t ? 'active' : ''}`;
+  chip.textContent = t.toUpperCase();
+  chip.onclick = () => {
+    currentFilter = t;
+    activeNode = null;
+    document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    render();
+  };
+  toolbar.appendChild(chip);
+});
+
+function render() {
+  drawNodes();
+  drawEdges();
+  renderSidebar();
+}
+
+svg.onclick = () => {
+  activeNode = null;
+  render();
+};
+
+// 6. Pan & Zoom Logic
+let tx = 0, ty = 0, scale = 1;
+let isDragging = false, startX, startY;
+
+function updateTransform() {
+  viewport.setAttribute('transform', `translate(${tx}, ${ty}) scale(${scale})`);
+}
+
+function fitToScreen() {
+  const containerW = svg.clientWidth || (window.innerWidth - 350);
+  const containerH = svg.clientHeight || window.innerHeight;
+  scale = Math.min(containerW / 1850, containerH / 650, 0.95);
+  scale = Math.max(scale, 0.4);
+  tx = 20;
+  ty = 40;
+  updateTransform();
+}
+
+svg.onmousedown = e => {
+  if (e.target.closest('.node')) return;
+  isDragging = true;
+  startX = e.clientX - tx;
+  startY = e.clientY - ty;
+};
+
+window.onmousemove = e => {
+  if (!isDragging) return;
+  tx = e.clientX - startX;
+  ty = e.clientY - startY;
+  updateTransform();
+};
+
+window.onmouseup = () => isDragging = false;
+
+svg.onwheel = e => {
+  e.preventDefault();
+  const ds = e.deltaY > 0 ? 0.9 : 1.1;
+  const rect = svg.getBoundingClientRect();
+  const cx = e.clientX - rect.left;
+  const cy = e.clientY - rect.top;
+  
+  tx = cx - (cx - tx) * ds;
+  ty = cy - (cy - ty) * ds;
+  scale *= ds;
+  updateTransform();
+};
+
+document.getElementById('btn-in').onclick = () => { scale *= 1.2; updateTransform(); };
+document.getElementById('btn-out').onclick = () => { scale *= 0.8; updateTransform(); };
+document.getElementById('btn-fit').onclick = fitToScreen;
+
+// Initial setup
+window.addEventListener('resize', fitToScreen);
+setTimeout(() => {
+  fitToScreen();
+  render();
+}, 50);
+</script>
+</body>
+</html>

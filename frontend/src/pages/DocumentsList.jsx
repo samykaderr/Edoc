@@ -12,7 +12,7 @@ function DocumentsList() {
   const { documentTypes: schemas } = useDocuments();
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
-  // Bug #9 fix : Ajout d'un état d'erreur explicite au lieu du masquage par mockData
+  // Bug #9 fix : Ajout d'un ├®tat d'erreur explicite au lieu du masquage par mockData
   const [fetchError, setFetchError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [documentType, setDocumentType] = useState(initialType);
@@ -30,6 +30,8 @@ function DocumentsList() {
             id: item.id || `REQ-${1000 + index}`,
             type: item.documentType || item.schemaName || 'Document générique',
             schemaName: item.schemaName || item.documentType || '',
+            // tableName est toujours fiable car il vient directement de la requête
+            tableName: tableToQuery,
             date: item.createdAt ? new Date(item.createdAt).toISOString().split('T')[0] : item.created_at || '-',
             status: item.status || item.statut || 'Nouveau',
             originalId: item.id
@@ -40,7 +42,7 @@ function DocumentsList() {
         }
       } catch (error) {
         // Bug #9 fix : Affichage clair de l'erreur au lieu du retour silencieux sur mockData
-        console.error("Erreur de récupération des documents", error);
+        console.error("Erreur de r├®cup├®ration des documents", error);
         setFetchError(`Impossible de charger les documents : ${error.message}`);
         setDocuments([]);
       } finally {
@@ -73,7 +75,7 @@ function DocumentsList() {
     if (documentType) {
       navigate(`/view/${documentType}`);
     } else {
-      alert('Veuillez sélectionner un type de document');
+      alert('Veuillez s├®lectionner un type de document');
     }
   };
 
@@ -92,7 +94,7 @@ function DocumentsList() {
           fontWeight: 500,
           fontSize: '0.9rem'
         }}>
-          ⚠️ {fetchError}
+          ÔÜá´©Å {fetchError}
         </div>
       )}
 
@@ -163,7 +165,7 @@ function DocumentsList() {
               </tr>
             ) : filteredDocs.length === 0 ? (
               <tr>
-                <td colSpan="5" style={{ padding: '2rem', textAlign: 'center', color: '#5f6368' }}>Aucun document trouvé.</td>
+                <td colSpan="5" style={{ padding: '2rem', textAlign: 'center', color: '#5f6368' }}>Aucun document trouv├®.</td>
               </tr>
             ) : (
               filteredDocs.map((doc, idx) => (
@@ -186,9 +188,17 @@ function DocumentsList() {
                   </td>
                   <td style={{ padding: '1rem', textAlign: 'center' }}>
                     <button
-                      title="View Document"
+                      title="Consulter le document"
                       style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#5f6368' }}
-                      onClick={() => navigate(`/view/${doc.originalId || doc.id}`)}
+                      onClick={() => {
+                        // tableName est toujours présent car stocké au moment du chargement de la liste
+                        const table = doc.tableName || doc.schemaName || documentType;
+                        if (!table) {
+                          alert('Impossible de déterminer le type de document.');
+                          return;
+                        }
+                        navigate(`/view/${table}/${doc.id}`);
+                      }}
                     >
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>

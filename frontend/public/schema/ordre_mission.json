@@ -16,24 +16,24 @@
             "title": "Nom de l'employé",
             "minLength": 2,
             "maxLength": 100,
-            "readOnly": true
+            "readOnly": false
         },
         "prenomEmploye": {
             "type": "string",
             "title": "Prénom de l'employé",
             "minLength": 2,
             "maxLength": 100,
-            "readOnly": true
+            "readOnly": false
         },
         "gradeEmploye": {
             "type": "string",
             "title": "Grade / Poste",
-            "readOnly": true
+            "readOnly": false
         },
         "directionEmploye": {
             "type": "string",
             "title": "Direction / Service",
-            "readOnly": true
+            "readOnly": false
         },
         "objetMission": {
             "type": "string",

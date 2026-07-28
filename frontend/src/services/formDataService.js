@@ -66,4 +66,28 @@ export const formDataService = {
   async all(tableName) {
     return this.findAll(tableName);
   },
+
+  /**
+   * Récupère un seul enregistrement par son identifiant.
+   * Aligne sur : GET /api/v1/form-data/{tableName}/{id}
+   * Normalise les clés en minuscules (certains drivers MySQL retournent en MAJUSCULES).
+   */
+  async findById(tableName, id) {
+    const response = await fetch(
+      `${BASE_URL}/form-data/${encodeURIComponent(tableName)}/${encodeURIComponent(id)}`
+    );
+    if (response.status === 404) {
+      throw new Error(`Document introuvable (id=${id}, table=${tableName}).`);
+    }
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      const errorMessage = errorData.error || errorData.message || `Erreur ${response.status} lors du chargement.`;
+      throw new Error(errorMessage);
+    }
+    const data = await response.json();
+    // Normalisation des clés en minuscules pour l'uniformité avec les noms de champs du schéma
+    return Object.fromEntries(
+      Object.entries(data).map(([k, v]) => [k.toLowerCase(), v])
+    );
+  },
 };
