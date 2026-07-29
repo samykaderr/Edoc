@@ -2,120 +2,125 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<title>Architecture Map - Edoc Soummam</title>
+<title>Architecture Map — Edoc-Soummam (v4)</title>
 <style>
   :root {
-    --bg: #121418; 
-    --panel: #1e222b; 
-    --panel-2: #282d37; 
-    --border: #3a4150;
-    --text: #f0f4f8; 
-    --muted: #94a3b8;
-    --client: #38bdf8; 
-    --route: #4ade80; 
-    --service: #c084fc;
-    --db: #fbbf24; 
-    --external: #f43f5e; 
-    --critical: #ef4444;
-    --accent: #f59e0b; 
-    --accent-2: #f97316;
+    --bg: #0F0F0F;      --panel: #161616;
+    --panel-2: #1c1c1c; --border: #2a2a2a;
+    --text: #e8e8e8;    --muted: #8a8a8a;
+    --client: #4ea1ff;  --route: #7bd389;
+    --service: #c792ea; --db: #ffb86b;
+    --external: #ff6b9d;--critical: #ff3860;
+    --accent: #f5b942;  --accent-2: #ff7a45;
   }
-  
   * { box-sizing: border-box; }
-  body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, sans-serif; overflow: hidden; display: flex; }
-  
-  #main { flex: 1; height: 100%; position: relative; overflow: hidden; display: flex; flex-direction: column; }
-  #sidebar { width: 350px; height: 100%; background: var(--panel); border-left: 1px solid var(--border); padding: 20px; overflow-y: auto; flex-shrink: 0; z-index: 10; box-shadow: -5px 0 20px rgba(0,0,0,0.4); }
-  
-  #toolbar { position: absolute; top: 12px; left: 12px; z-index: 10; display: flex; gap: 8px; flex-wrap: wrap; background: rgba(30, 34, 43, 0.9); backdrop-filter: blur(8px); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); }
-  .chip { background: var(--panel-2); border: 1px solid var(--border); color: var(--text); padding: 6px 14px; border-radius: 16px; cursor: pointer; font-size: 12px; font-weight: 600; user-select: none; transition: all 0.2s; }
-  .chip:hover { border-color: var(--accent); }
-  .chip.active { background: var(--accent); color: #000; border-color: var(--accent); }
-  
-  .controls { position: absolute; bottom: 20px; right: 20px; z-index: 10; display: flex; gap: 6px; }
-  .controls button { background: var(--panel); border: 1px solid var(--border); color: var(--text); padding: 8px 14px; cursor: pointer; border-radius: 6px; font-weight: bold; transition: background 0.2s; }
-  .controls button:hover { background: var(--panel-2); border-color: var(--muted); }
-  
-  #canvas { flex: 1; width: 100%; height: 100%; cursor: grab; }
-  #canvas:active { cursor: grabbing; }
-  
-  .node rect { stroke-width: 1.5; rx: 8; cursor: pointer; transition: filter 0.2s, stroke-width 0.2s; }
-  .node.critical rect { stroke-width: 2.5; }
-  .node:hover rect { filter: brightness(1.25); }
-  .node text { pointer-events: none; }
-  .node .label { font-weight: 700; font-size: 13px; fill: var(--text); }
-  .node .sub { font-size: 11px; fill: var(--muted); }
-  
-  .cluster rect { fill-opacity: 0.15; stroke-dasharray: 4 4; stroke: var(--border); rx: 10; pointer-events: none; }
-  .cluster text { fill: var(--muted); font-size: 11px; font-weight: 800; letter-spacing: 1.5px; pointer-events: none; }
-  
-  path.edge { fill: none; stroke-width: 1.8; opacity: 0.75; transition: opacity 0.2s; }
-  path.edge.critical { stroke: var(--critical); stroke-width: 2.2; opacity: 1; }
-  path.edge.api { stroke: var(--external); }
-  path.edge.db { stroke: var(--db); }
-  path.edge.mount { stroke: var(--route); }
-  path.edge.normal { stroke: var(--muted); }
-  
-  .edge-label { font-size: 10px; fill: var(--text); pointer-events: none; font-weight: 600; }
-  .edge-label-bg { fill: var(--bg); opacity: 0.9; rx: 4; }
-  
-  .badge-fix { fill: #22c55e; }
-  .badge-bug { fill: #ef4444; }
-  .badge-text { font-size: 10px; fill: white; font-weight: bold; text-anchor: middle; alignment-baseline: central; pointer-events: none; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    height: 100%; overflow: hidden; }
+  #app { display: flex; flex-direction: column; height: 100vh; }
 
-  /* Dimming logic */
-  .dimmed { opacity: 0.15 !important; }
-  .dimmed-node rect { stroke: var(--border) !important; fill: transparent !important; }
-  
-  h2 { margin-top: 0; font-size: 18px; color: var(--accent); }
-  .sb-section { margin-top: 20px; }
-  .sb-title { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--muted); letter-spacing: 1px; margin-bottom: 8px; }
-  .sb-path { font-family: monospace; font-size: 11px; background: var(--bg); border: 1px solid var(--border); padding: 6px 8px; border-radius: 4px; word-break: break-all; color: var(--accent); }
-  ul { padding-left: 18px; margin: 0; font-size: 13px; color: var(--text); line-height: 1.5; }
-  li { margin-bottom: 6px; }
-  .bug-item { border-left: 3px solid var(--critical); padding-left: 8px; margin-bottom: 10px; font-size: 12px; background: rgba(239, 68, 68, 0.1); padding: 6px 8px; border-radius: 0 4px 4px 0; }
-  .fix-item { border-left: 3px solid #22c55e; padding-left: 8px; margin-bottom: 10px; font-size: 12px; background: rgba(34, 197, 94, 0.1); padding: 6px 8px; border-radius: 0 4px 4px 0; }
+  header#topbar { display:flex; align-items:center; gap:14px; padding:10px 16px;
+    border-bottom:1px solid var(--border); background:var(--panel); flex-wrap:wrap; z-index: 5;}
+  header#topbar h1 { font-size:15px; margin:0; font-weight:600; white-space:nowrap;}
+  header#topbar .sub { color: var(--muted); font-size:12px; }
+
+  #chips { display:flex; gap:6px; flex-wrap:wrap; flex:1; }
+  .chip { padding:5px 12px; border-radius:999px; font-size:12px; cursor:pointer;
+    border:1px solid var(--border); background:var(--panel-2); color:var(--muted);
+    white-space:nowrap; transition: all .12s ease; user-select:none;}
+  .chip:hover { border-color:#555; color:var(--text); }
+  .chip.active { background: var(--accent); color:#161616; border-color:var(--accent); font-weight:600;}
+
+  #zoomctl { display:flex; gap:4px; }
+  #zoomctl button { width:26px; height:26px; border-radius:6px; border:1px solid var(--border);
+    background:var(--panel-2); color:var(--text); cursor:pointer; font-size:14px; line-height:1;}
+  #zoomctl button:hover { background:#2a2a2a; }
+
+  #main { flex:1; display:flex; min-height:0; }
+  #canvas-wrap { flex:1; position:relative; overflow:hidden; cursor:grab; background:
+    radial-gradient(circle at 1px 1px, #1d1d1d 1px, transparent 0) 0 0/22px 22px, var(--bg); }
+  #canvas-wrap.dragging { cursor:grabbing; }
+  svg#map { position:absolute; top:0; left:0; }
+
+  .cluster-box { fill-opacity: 0.55; stroke-opacity:0.9; rx:14; }
+  .cluster-label { font-size:12px; letter-spacing:1.5px; text-transform:uppercase; fill:var(--muted); font-weight:700;}
+
+  .node-rect { stroke-width:1.4px; cursor:pointer; transition: opacity .15s ease, filter .15s ease; }
+  .node-rect.critical { stroke-width:2.2px; }
+  .node-group.dimmed { opacity:0.14; }
+  .node-group:hover .node-rect { filter: brightness(1.25); }
+  .node-label { font-size:12.5px; font-weight:700; fill:var(--text); pointer-events:none; }
+  .node-sub { font-size:10.5px; fill:var(--muted); pointer-events:none; }
+  .node-dead { font-size:9.5px; fill:var(--critical); font-weight:700; pointer-events:none; }
+  .node-new { font-size:9px; fill:#7bd389; font-weight:700; pointer-events:none; }
+
+  .badge { pointer-events:none; }
+  .badge-fix circle { fill:#1e9e5a; } .badge-fix text { fill:#eafff2; font-size:9px; font-weight:700; }
+  .badge-bug circle { fill:#c0263f; } .badge-bug text { fill:#ffecef; font-size:9px; font-weight:700; }
+
+  .edge-path { fill:none; transition: opacity .15s ease, stroke-width .15s ease; }
+  .edge-path.dimmed { opacity:0.06; }
+  .edge-label { font-size:9.5px; fill:var(--muted); pointer-events:none; }
+  .edge-label.dimmed { opacity: 0.06; }
+
+  #sidebar { width:370px; min-width:370px; border-left:1px solid var(--border); background:var(--panel);
+    overflow-y:auto; padding:18px; }
+  #sidebar h2 { font-size:15px; margin:0 0 4px 0; }
+  #sidebar .path { font-size:11px; color:var(--accent); font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    word-break: break-all; margin-bottom:14px; }
+  #sidebar .role { font-size:12.5px; color:var(--text); margin-bottom:10px; line-height:1.5;}
+  #sidebar .plain-box { background:var(--panel-2); border:1px solid var(--border); border-radius:10px;
+    padding:10px 12px; font-size:12.5px; line-height:1.55; margin-bottom:14px; }
+  #sidebar .plain-box .lbl { color:var(--accent); font-size:10.5px; text-transform:uppercase; letter-spacing:1px;
+    font-weight:700; margin-bottom:4px; display:block;}
+  #sidebar ul.notes { margin:0 0 14px 0; padding-left:18px; font-size:12px; color:var(--muted); line-height:1.6;}
+  #sidebar h3.section { font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--muted);
+    margin:16px 0 8px 0; border-top:1px solid var(--border); padding-top:12px;}
+  #sidebar .edge-row { font-size:11.5px; padding:6px 8px; border-radius:6px; background:var(--panel-2);
+    margin-bottom:5px; display:flex; justify-content:space-between; gap:8px;}
+  #sidebar .edge-row .arrow { color: var(--muted); }
+  #sidebar .bug-row, #sidebar .fix-row { font-size:11.5px; padding:7px 9px; border-radius:6px; margin-bottom:6px; }
+  #sidebar .bug-row { background:rgba(255,56,96,0.12); border:1px solid rgba(255,56,96,0.35);}
+  #sidebar .fix-row { background:rgba(123,211,137,0.1); border:1px solid rgba(123,211,137,0.3);}
+  #sidebar .sev { font-weight:700; text-transform:uppercase; font-size:9.5px; margin-right:6px; padding:1px 6px; border-radius:4px;}
+  .sev-high { background:#ff3860; color:#fff; } .sev-med { background:#f5b942; color:#222; } .sev-low { background:#555; color:#eee;}
+  #sidebar .empty-hint { color:var(--muted); font-size:12.5px; line-height:1.6; }
+  #sidebar .legend-row { display:flex; align-items:center; gap:8px; font-size:11.5px; color:var(--muted); margin-bottom:6px;}
+  #sidebar .dot { width:10px; height:10px; border-radius:3px; display:inline-block; }
+  #sidebar .findings li { margin-bottom:9px; }
+  #sidebar::-webkit-scrollbar { width:8px; } #sidebar::-webkit-scrollbar-thumb { background:#333; border-radius:4px; }
 </style>
 </head>
 <body>
-<div id="main">
-  <div id="toolbar"></div>
-  <div class="controls">
-    <button id="btn-fit">Ajuster</button>
-    <button id="btn-in">+</button>
-    <button id="btn-out">-</button>
+<div id="app">
+  <header id="topbar">
+    <h1>Edoc-Soummam <span class="sub">— architecture map (v4, actualisée)</span></h1>
+    <div id="chips"></div>
+    <div id="zoomctl">
+      <button id="zoom-fit" title="Fit">⤢</button>
+      <button id="zoom-in" title="Zoom in">+</button>
+      <button id="zoom-out" title="Zoom out">−</button>
+    </div>
+  </header>
+  <div id="main">
+    <div id="canvas-wrap">
+      <svg id="map" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+    <aside id="sidebar"></aside>
   </div>
-  <svg id="canvas">
-    <defs>
-      <marker id="arrow-normal" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-        <path d="M0,0 L10,5 L0,10 z" fill="var(--muted)" />
-      </marker>
-      <marker id="arrow-critical" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-        <path d="M0,0 L10,5 L0,10 z" fill="var(--critical)" />
-      </marker>
-      <marker id="arrow-api" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-        <path d="M0,0 L10,5 L0,10 z" fill="var(--external)" />
-      </marker>
-      <marker id="arrow-db" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-        <path d="M0,0 L10,5 L0,10 z" fill="var(--db)" />
-      </marker>
-      <marker id="arrow-route" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-        <path d="M0,0 L10,5 L0,10 z" fill="var(--route)" />
-      </marker>
-    </defs>
-    <g id="viewport"></g>
-  </svg>
 </div>
-<div id="sidebar"></div>
 
 <script>
+// ===========================================================================
+// DATA — clusters / nodes / edges (hand-positioned layout)
+// ===========================================================================
 const clusters = [
-  { id: 'pages', label: 'Pages (React)', x: 50, y: 50, w: 220, h: 500, color: 'var(--client)' },
-  { id: 'form-engine', label: 'Form Engine', x: 350, y: 50, w: 220, h: 500, color: 'var(--client)' },
-  { id: 'api-clients', label: 'API Clients', x: 650, y: 50, w: 220, h: 500, color: 'var(--route)' },
-  { id: 'server-routes', label: 'Server Routes (Spring)', x: 950, y: 50, w: 220, h: 500, color: 'var(--route)' },
-  { id: 'services', label: 'Services', x: 1250, y: 50, w: 220, h: 500, color: 'var(--service)' },
-  { id: 'data', label: 'Data & Schemas', x: 1550, y: 50, w: 220, h: 500, color: 'var(--db)' }
+  { id: 'entry',    label: 'Client Entry',               x: 30,   y: 20, w: 190, h: 400 },
+  { id: 'pages',    label: 'Pages / Views',                x: 250,  y: 20, w: 210, h: 790 },
+  { id: 'engine',   label: 'Frontend Engine & Services',   x: 490,  y: 20, w: 240, h: 1200 },
+  { id: 'routes',   label: 'Server Routes',                x: 760,  y: 20, w: 220, h: 760 },
+  { id: 'services', label: 'Services (Java)',               x: 1010, y: 20, w: 200, h: 610 },
+  { id: 'data',     label: 'Data & External',               x: 1240, y: 20, w: 230, h: 830 },
 ];
 
 const N = (id, cluster, label, sub, x, y, w, h, color, opts = {}) => ({
@@ -123,455 +128,841 @@ const N = (id, cluster, label, sub, x, y, w, h, color, opts = {}) => ({
 });
 
 const nodes = [
-  // Pages
-  N('view-form', 'pages', 'ViewForm.jsx', 'Main form rendering view', 60, 100, 200, 50, 'var(--client)', {
-    role: 'Renders the form dynamically based on the schema, and coordinates submission.',
-    plain: 'The main page where users fill out forms like vacation requests. It asks the Form Engine to draw the inputs.',
-    path: 'frontend/src/pages/ViewForm.jsx:88',
-    notes: ['line:40, Calls syncSchema in a non-blocking catch block', 'line:88, Submits the flattened payload using formDataService'],
-    tag: ['overview', 'forms', 'critical', 'all'],
-    critical: true
+  // --- Client Entry ------------------------------------------------------
+  N('main-jsx', 'entry', 'main.jsx', 'React root + ErrorBoundary', 50, 60, 150, 70, 'client', {
+    role: "Monte l'app React dans le DOM et intercepte les erreurs de rendu.",
+    plain: "Le tout premier fichier exécuté dans le navigateur : il démarre l'application et affiche un écran de secours si quelque chose plante.",
+    path: 'frontend/src/main.jsx',
+    notes: ['Enveloppe <App/> dans une ErrorBoundary maison (ligne 9-32)', 'StrictMode activé'],
+    tag: ['all', 'overview'],
   }),
-  N('doc-manager', 'pages', 'DocumentTypeManager.jsx', 'Admin form management', 60, 200, 200, 50, 'var(--client)', {
-    role: 'Admin interface to view and synchronize JSON schemas into MySQL tables.',
-    plain: 'The admin dashboard where managers can see all available form types and manually sync their structure to the database.',
+  N('app-jsx', 'entry', 'App.jsx', 'Routeur (react-router-dom)', 50, 160, 150, 110, 'client', {
+    role: "Déclare toutes les routes et enveloppe les pages dans le Layout partagé.",
+    plain: "Le plan du site : selon l'URL tapée, il décide quelle page afficher (tableau de bord, liste, formulaire, consultation...).",
+    path: 'frontend/src/App.jsx:17-33',
+    notes: [
+      "NOUVEAU : route '/view/:tableName/:id' ajoutée pour la consultation en lecture seule (ligne 26)",
+      "Route '/create' toujours déclarée mais absente du menu Sidebar (lien mort)",
+      "NETTOYAGE : l'import mort de DocumentsList a été retiré — confirmation qu'aucune route '/documents' n'a jamais été déclarée ici ; le composant DocumentsList.jsx reste sur le disque mais est désormais totalement orphelin (aucun import, aucune route)",
+      "Toute URL non déclarée (dont '/documents') retombe sur le wildcard '*' → redirection vers '/' (Dashboard)",
+    ],
+    tag: ['all', 'overview', 'submit-flow', 'documents-list', 'schema-sync', 'employee-lookup', 'create-form', 'view-detail'],
+    critical: true,
+  }),
+  N('layout-shell', 'entry', 'Layout / Sidebar / TopNav', 'Coquille visuelle commune', 50, 300, 150, 100, 'client', {
+    role: "Affiche la barre latérale et l'en-tête, puis rend la page active via <Outlet/>.",
+    plain: "Le cadre fixe (menu, logo, en-tête) qui entoure chaque page, comme le contour d'une fenêtre.",
+    path: 'frontend/src/components/Layout.jsx',
+    notes: [
+      "⚠️ RÉGRESSION : le lien 'Mes Documents' (vers /documents) a été entièrement supprimé de Sidebar.jsx (pas juste commenté) — seul 'Tableau de bord' reste dans le menu",
+      "Sidebar.jsx : lien 'Nouvelle Demande' vers /create toujours commenté",
+      'TopNav.jsx : boutons notifications/réglages décoratifs, non connectés',
+    ],
+    tag: ['all', 'overview'],
+  }),
+
+  // --- Pages / Views -------------------------------------------------------
+  N('dashboard', 'pages', 'Dashboard.jsx', 'Grille des types de documents', 270, 60, 170, 80, 'route', {
+    role: "Liste les types de documents disponibles et navigue vers le gestionnaire du type choisi.",
+    plain: "La page d'accueil : une grille de cartes, une par type de formulaire (congé, réquisition...).",
+    path: 'frontend/src/pages/Dashboard.jsx',
+    notes: ['Consomme useDocuments() pour la liste', "Clic carte → /document-manager/:schemaName"],
+    tag: ['all', 'overview', 'documents-list'],
+  }),
+  N('documents-list', 'pages', 'DocumentsList.jsx', 'Table globale + filtres', 270, 170, 170, 110, 'route', {
+    role: "Affiche tous les documents soumis, filtrables par type et recherche texte ; ouvre chaque document en lecture seule.",
+    plain: "Un tableau récapitulatif de toutes les demandes déjà envoyées, avec une recherche, un filtre par type, et un bouton pour consulter chaque ligne.",
+    path: 'frontend/src/pages/DocumentsList.jsx',
+    notes: [
+      "⚠️ AGGRAVÉ : la page est désormais totalement inaccessible, même en tapant /documents dans l'URL — App.jsx ne déclare plus aucune route vers ce composant (l'import a été retiré) ; toute tentative retombe sur le wildcard '*' → redirection vers '/'",
+      "Le bouton 'Consulter' navigue vers /view/{table}/{doc.id} (ligne 194-198), la route dédiée à la lecture seule ; le nom de table est maintenant mémorisé au chargement (doc.tableName) plutôt que redéduit",
+      "Encodage partiellement corrigé (une chaîne réparée), mais 'r├®cup├®ration', 's├®lectionner', 'trouv├®' etc. restent corrompus (lignes 15, 45, 78, 168)",
+      "Sans type sélectionné, interroge toujours la table 'documents' qui n'existe pas (ligne 26)",
+    ],
+    tag: ['all', 'overview', 'documents-list', 'view-detail'],
+  }),
+  N('doc-type-manager', 'pages', 'DocumentTypeManager.jsx', 'Table par type de document', 270, 300, 170, 110, 'route', {
+    role: "Charge le schéma local, synchronise la table MySQL en arrière-plan, puis affiche les enregistrements existants.",
+    plain: "La page 'historique' pour UN type de document précis : elle montre les colonnes définies par son schéma et les lignes déjà en base.",
     path: 'frontend/src/pages/DocumentTypeManager.jsx',
-    notes: ['Calls syncSchema directly for manual synchronisation'],
-    tag: ['overview', 'admin', 'all']
+    notes: [
+      "CORRIGÉ : le bouton 'Consulter' navigue désormais vers /view/{schemaName}/{doc.id} (ligne 162-163), aligné avec DocumentsList.jsx",
+      "Colonnes imbriquées (ex: 'periode') affichées comme [object Object] (pas d'aplatissement à l'affichage)",
+    ],
+    tag: ['all', 'overview', 'documents-list', 'schema-sync'],
+  }),
+  N('view-form', 'pages', 'ViewForm.jsx', 'Édition + Revue + Soumission', 270, 430, 170, 120, 'route', {
+    role: "Orchestre le cycle de vie complet d'une soumission : chargement du schéma, rendu du formulaire, écran de relecture, puis insertion en base.",
+    plain: "L'écran où l'utilisateur remplit réellement un formulaire, vérifie ses réponses, puis valide définitivement sa demande.",
+    path: 'frontend/src/pages/ViewForm.jsx',
+    notes: [
+      "3 étapes : EDITING → REVIEW → SUCCESS",
+      "Utilise 'schemaName' de l'URL comme nom de table (cohérent avec syncSchema)",
+      "Ajoute statut: 'nouveau' avant l'insertion",
+    ],
+    tag: ['all', 'overview', 'submit-flow', 'schema-sync'],
+    critical: true,
+  }),
+  N('document-view-page', 'pages', 'DocumentViewPage.jsx', 'Consultation lecture seule (NOUVEAU)', 270, 570, 170, 110, 'route', {
+    role: "Charge en parallèle le schéma local et l'enregistrement MySQL via son ID, puis affiche le formulaire en lecture seule.",
+    plain: "Le nouvel écran 'fiche détail' : il montre un document déjà soumis, tel quel, sans permettre de le modifier.",
+    path: 'frontend/src/pages/DocumentViewPage.jsx',
+    notes: [
+      "Route : /view/:tableName/:id — nouvelle route ajoutée dans App.jsx",
+      "Charge schéma + données EN PARALLÈLE via Promise.all (ligne 42-45)",
+      "Bouton 'Retour' : utilise window.history.back() s'il y a un historique de navigation, avec repli sur /documents?type={tableName} sinon — ⚠️ ce repli mène désormais nulle part puisque /documents n'est plus une route déclarée (redirection vers '/' par le wildcard, perte du contexte)",
+    ],
+    tag: ['all', 'overview', 'view-detail'],
+    critical: true,
+  }),
+  N('create-form', 'pages', 'CreateForm.jsx', "Éditeur de schéma brut (non lié au menu)", 270, 700, 170, 70, 'route', {
+    role: "Permet de coller un JSON Schema à la main et de créer/altérer la table MySQL correspondante.",
+    plain: "Un outil pour créer un nouveau type de formulaire en collant du JSON — mais aucun bouton du menu n'y mène plus.",
+    path: 'frontend/src/pages/CreateForm.jsx',
+    notes: ["Route /create existe (App.jsx) mais le lien de navigation est commenté dans Sidebar.jsx"],
+    tag: ['all', 'create-form'],
   }),
 
-  // Form Engine
-  N('form-engine', 'form-engine', 'index.jsx (FormEngine)', 'Form orchestrator', 360, 100, 200, 50, 'var(--client)', {
-    role: 'Coordinates state, calculates field visibility, and builds the final submission payload.',
-    plain: 'The brain of the forms. It takes a JSON blueprint and turns it into a state machine, tracking user input and applying rules.',
-    path: 'frontend/src/features/form-engine/form-renderer/index.jsx:154',
-    notes: ['line:154, Flattens nested JSON objects using an underscore (e.g. periode_dateDebut) so they map 1:1 to SQL columns.', 'Uses validateFormData before submission'],
-    tag: ['overview', 'forms', 'critical', 'all'],
-    critical: true
+  // --- Frontend Engine & Services -----------------------------------------
+  N('use-documents-hook', 'engine', 'useDocuments()', 'Charge + valide le registre', 510, 50, 200, 80, 'service', {
+    role: "Récupère /schema/registry.json puis valide chaque schéma référencé avant de l'exposer aux pages.",
+    plain: "Va chercher la liste des types de documents disponibles et écarte silencieusement ceux dont le fichier est mal formé.",
+    path: 'frontend/src/hooks/useDocuments.js',
+    notes: ['Rejette un schéma si isValidSchemaStructure() renvoie false', "N'inclut que les schémas listés dans registry.json — voir proposition_promotion.json (bug)"],
+    tag: ['all', 'overview', 'documents-list'],
   }),
-  N('render', 'form-engine', 'render.jsx', 'Field renderer', 360, 200, 200, 50, 'var(--client)', {
-    role: 'Renders individual React input components based on JSON schema types.',
-    plain: 'Draws the actual text boxes, date pickers, and dropdowns on the screen.',
+  N('form-engine-orchestrator', 'engine', 'FormEngine (form-renderer/index.jsx)', "Orchestrateur du formulaire", 510, 150, 200, 110, 'service', {
+    role: "Composant central : initialise les données, calcule la visibilité des champs, valide et construit le payload d'envoi. Réutilisé en mode édition ET en mode lecture seule.",
+    plain: "Le cerveau du formulaire dynamique : il transforme un schéma JSON en formulaire vivant, avec ses règles de validation et de champs cachés. Il sert aussi à afficher un document déjà rempli, verrouillé.",
+    path: 'frontend/src/features/form-engine/form-renderer/index.jsx',
+    notes: [
+      "NOUVEAU : en mode consultation (initialData fourni), un effet dédié reconstruit un mapping 'minuscule → clé camelCase du schéma' et normalise les données reçues de MySQL avant affichage (ligne 68-94) — corrige l'affichage des champs comme idEmploye qui reviennent en minuscules depuis la base",
+      "⚠️ RÉGRESSION : envoie toujours 'num_doc' dans le payload, mais DefinitionRepository ne crée plus cette colonne (voir plus bas) — le problème des colonnes manquantes est réapparu",
+    ],
+    tag: ['all', 'overview', 'submit-flow', 'employee-lookup', 'view-detail'],
+    critical: true,
+  }),
+  N('render-jsx', 'engine', 'render.jsx', 'Champs + EmployeLookup', 510, 280, 200, 100, 'service', {
+    role: "Fabrique chaque contrôle de saisie et gère la recherche d'employé par matricule avec debounce.",
+    plain: "Dessine chaque case du formulaire (texte, date, liste...) et, pour le champ 'employé', va chercher automatiquement son nom quand on tape son identifiant.",
     path: 'frontend/src/features/form-engine/form-renderer/render.jsx',
-    notes: ['Fetches Employee data dynamically if an employee ID field is present (via api.js)'],
-    tag: ['overview', 'forms', 'all']
+    notes: ['Debounce de 600ms avant recherche auto', 'AbortController pour annuler une recherche en cours'],
+    tag: ['all', 'overview', 'submit-flow', 'employee-lookup'],
   }),
-  N('json-parser', 'form-engine', 'jsonParser.ts', 'Schema normalization', 360, 300, 200, 50, 'var(--client)', {
-    role: 'Parses raw JSON schema strings into objects and resolves references.',
-    plain: 'Reads the JSON files that define the forms and makes sure they are valid and understandable by the engine.',
+  N('json-parser', 'engine', 'jsonParser.ts', 'Schéma JSON → payload MySQL', 510, 400, 200, 110, 'service', {
+    role: "Aplatit les propriétés imbriquées et déduit un type SQL pour chaque champ du schéma.",
+    plain: "Traduit un schéma JSON (avec des champs parfois imbriqués) en une liste plate de colonnes MySQL avec leur type.",
     path: 'frontend/src/features/form-engine/parser/jsonParser.ts',
-    notes: ['Also converts schemas into DDL payloads for DefinitionService'],
-    tag: ['forms', 'all']
+    notes: [
+      "SYSTEM_COLUMNS = {id, num_doc, statut, created_at} exclues du payload ALTER — désormais cohérent : ces 4 colonnes sont bien créées par le backend",
+      "Sépare les champs imbriqués avec '_' plutôt que '.' pour rester compatible SQL",
+    ],
+    tag: ['all', 'overview', 'submit-flow', 'create-form'],
+    critical: true,
   }),
-
-  // API Clients
-  N('form-data-svc', 'api-clients', 'formDataService.js', 'CRUD client', 660, 100, 200, 50, 'var(--route)', {
-    role: 'Fetches records and posts new form entries to the backend.',
-    plain: 'The messenger that takes the finished form from the user and hands it to the server to be saved.',
-    path: 'frontend/src/services/formDataService.js:15',
-    notes: ['line:15, insert() now strictly requires application/json', 'Extracts detailed Spring Boot SQL errors if the 400 Bad Request has errorData.details'],
-    tag: ['overview', 'forms', 'critical', 'all'],
-    critical: true
+  N('validation-manager', 'engine', 'validationManager.ts', 'Validation Ajv + règles inter-champs', 510, 530, 200, 100, 'service', {
+    role: "Compile le schéma avec Ajv, reconstruit un objet imbriqué pour la validation, et traduit les erreurs en français.",
+    plain: "Vérifie que les réponses respectent les règles du formulaire (obligatoire, format email, dates cohérentes...) et explique les erreurs en français.",
+    path: 'frontend/src/features/form-engine/validator/validationManager.ts',
+    notes: ['Ajv en mode strict:false + coerceTypes:true', "Règle spéciale : date de fin ne peut précéder la date de début"],
+    tag: ['all', 'overview', 'submit-flow'],
+    critical: true,
   }),
-  N('def-svc', 'api-clients', 'definitionService.js', 'DEAD: updateFields', 660, 200, 200, 50, 'var(--route)', {
-    role: 'Calls backend DDL endpoints to create or alter tables.',
-    plain: 'Tells the server to build new database tables when a new type of form is created.',
-    path: 'frontend/src/services/definitionService.js:45',
-    notes: ['line:45, updateFields() has zero live callers in the codebase. It is dead code.'],
-    tag: ['admin', 'all']
+  N('expression-evaluator', 'engine', 'expression-evaluator/index.js', 'Champs requis + visibilité conditionnelle', 510, 650, 200, 90, 'service', {
+    role: "Calcule les champs requis et les états cachés/lecture-seule, y compris les règles conditionnelles allOf/if/then.",
+    plain: "Décide quels champs sont obligatoires ou doivent apparaître/disparaître selon les réponses déjà données.",
+    path: 'frontend/src/features/form-engine/expression-evaluator/index.js',
+    notes: ["isValidSchemaStructure() exige $schema, $id, title, description ET documentType — plus strict que JsonParser.parse() qui ne vérifie que 'properties'"],
+    tag: ['all', 'overview', 'submit-flow', 'documents-list'],
   }),
-  N('api-js', 'api-clients', 'api.js', 'Axios instance', 660, 300, 200, 50, 'var(--route)', {
-    role: 'Base Axios client for API calls, primarily used for employee lookups.',
-    plain: 'A standard way for the app to talk to the server, mostly used right now to find employee details.',
+  N('field-registry', 'engine', 'register/index.js', 'Type de champ → contrôle HTML', 510, 760, 200, 80, 'service', {
+    role: "Mappe un type de champ JSON Schema (date, enum, boolean...) vers le bon contrôle HTML via des règles ordonnées.",
+    plain: "Choisit la bonne case à afficher : liste déroulante pour un choix, calendrier pour une date, case à cocher pour oui/non.",
+    path: 'frontend/src/features/form-engine/register/index.js',
+    notes: ['Conçu Open/Closed : ajouter un type = ajouter une règle, sans toucher au reste'],
+    tag: ['all', 'overview', 'submit-flow'],
+  }),
+  N('api-service', 'engine', 'services/api.js', 'Client axios + endpoint employé', 510, 860, 200, 80, 'service', {
+    role: "Instance axios centralisée et déclaration de l'endpoint GET employé.",
+    plain: "Le petit module qui sait comment parler au serveur pour retrouver les infos d'un employé.",
     path: 'frontend/src/services/api.js',
-    notes: ['Configured to hit /api which Vite proxies to localhost:8081'],
-    tag: ['all']
+    notes: ["baseURL = VITE_API_BASE ou '/api' (proxifié vers :8081 en dev)"],
+    tag: ['all', 'employee-lookup'],
+  }),
+  N('definition-service-js', 'engine', 'services/definitionService.js', 'Appels DDL (table/colonnes)', 510, 960, 200, 90, 'service', {
+    role: "Encapsule les appels POST/PUT vers les endpoints de définition de table (utilisé par CreateForm).",
+    plain: "Le messager qui demande au serveur de créer ou modifier la structure d'une table MySQL.",
+    path: 'frontend/src/services/definitionService.js',
+    notes: ["N'est utilisé que par CreateForm.jsx — la page non reliée au menu"],
+    tag: ['all', 'create-form'],
+  }),
+  N('formdata-service-js', 'engine', 'services/formDataService.js', 'Lecture/écriture/consultation + sync', 510, 1080, 200, 110, 'service', {
+    role: "Point d'accès unique pour insérer, lire (liste et détail), et synchroniser les données de formulaire avec le backend.",
+    plain: "Le messager principal entre le formulaire et la base de données : il envoie les réponses, liste les documents et va chercher le détail d'un document précis.",
+    path: 'frontend/src/services/formDataService.js',
+    notes: [
+      "NOUVEAU : findById(tableName, id) → GET /api/v1/form-data/{tableName}/{id} (ligne 75-92)",
+      "findById() met en minuscule toutes les clés de la réponse (ligne 89-91) — les autres méthodes ne le font pas, incohérence potentielle de casse",
+      "'all()' reste un simple alias de findAll() pour compatibilité",
+    ],
+    tag: ['all', 'overview', 'submit-flow', 'documents-list', 'schema-sync', 'view-detail'],
+    critical: true,
   }),
 
-  // Server Routes
-  N('form-data-ctrl', 'server-routes', 'FormDataController.java', 'Dynamic DML endpoints', 960, 100, 200, 50, 'var(--route)', {
-    role: 'Provides /api/v1/form-data/{tableName} for dynamic inserts and selects.',
-    plain: 'The server receptionist that receives the form data and hands it to the database worker.',
-    path: 'BackEnd/BackEnd/src/main/java/com/soummam/backend/controller/FormDataController.java:46',
-    notes: ['line:50, Wraps insert in a try-catch to convert DataAccessException into a 400 Bad Request with SQL details instead of a raw 500 crash.'],
-    tag: ['overview', 'forms', 'critical', 'all'],
-    critical: true
+  // --- Server Routes -------------------------------------------------------
+  N('backend-application', 'routes', 'BackEndApplication.java', 'Point d\'entrée Spring Boot', 780, 50, 180, 70, 'route', {
+    role: "Démarre le contexte Spring Boot et le serveur embarqué sur le port 8081.",
+    plain: "Le bouton 'marche' du serveur : c'est ce qui lance toute l'application côté back-end.",
+    path: 'BackEnd/BackEnd/src/main/java/com/soummam/backend/BackEndApplication.java',
+    notes: ['@SpringBootApplication déclenche le component scan de tout le package'],
+    tag: ['all', 'overview'],
   }),
-  N('form-def-ctrl', 'server-routes', 'FormDefinitionController.java', 'Dynamic DDL endpoints', 960, 200, 200, 50, 'var(--route)', {
-    role: 'Provides /api/v1/definitions/* to sync JSON schemas with MySQL structures.',
-    plain: 'Receives instructions to build new database tables when the admins create a new form.',
+  N('web-config', 'routes', 'WebConfig.java', 'Configuration CORS globale', 780, 140, 180, 80, 'route', {
+    role: "Déclare une politique CORS unique pour toutes les routes /api/**, évitant la duplication de @CrossOrigin.",
+    plain: "Autorise le site web (sur un autre port) à parler au serveur, en ouvrant la porte à toutes les origines.",
+    path: 'BackEnd/BackEnd/src/main/java/com/soummam/backend/config/WebConfig.java',
+    notes: ["allowedOrigins('*') combiné à toutes les méthodes — très permissif, à restreindre en production"],
+    tag: ['all', 'overview'],
+  }),
+  N('employe-controller', 'routes', 'EmployeController.java', "GET /api/v1/employes[/id]", 780, 240, 180, 90, 'route', {
+    role: "Expose la liste des employés et la recherche par matricule pour l'auto-remplissage du formulaire.",
+    plain: "Le guichet qui répond \"voici les infos de l'employé numéro X\" quand le formulaire le demande.",
+    path: 'BackEnd/BackEnd/src/main/java/com/soummam/backend/controller/EmployeController.java',
+    notes: ['@CrossOrigin(origins = "*") en plus de la config globale — redondant avec WebConfig'],
+    tag: ['all', 'employee-lookup'],
+  }),
+  N('formdata-controller', 'routes', 'FormDataController.java', "GET/POST /api/v1/form-data/{table}[/{id}]", 780, 350, 180, 130, 'route', {
+    role: "Expose la lecture (toutes les lignes ou une seule par ID) et l'écriture (INSERT) des données pour un type de document donné.",
+    plain: "Le guichet qui enregistre une nouvelle demande, renvoie la liste des demandes, ou renvoie le détail d'UNE demande précise.",
+    path: 'BackEnd/BackEnd/src/main/java/com/soummam/backend/controller/FormDataController.java',
+    notes: [
+      "NOUVEAU : GET /{tableName}/{id} → getById() (ligne 48-70), renvoie 404 si absent",
+      "Transmet tel quel le nom de table de l'URL au DataService (plus de préfixe caché)",
+    ],
+    tag: ['all', 'overview', 'submit-flow', 'documents-list', 'view-detail'],
+    critical: true,
+  }),
+  N('formdefinition-controller', 'routes', 'FormDefinitionController.java', "DDL: table / fields / sync", 780, 500, 180, 130, 'route', {
+    role: "Expose la création de table, l'ajout/modification de colonnes, et la synchronisation automatique schéma→MySQL.",
+    plain: "Le guichet qui construit ou met à jour la structure d'une table MySQL à partir d'un schéma de formulaire.",
     path: 'BackEnd/BackEnd/src/main/java/com/soummam/backend/controller/FormDefinitionController.java',
-    notes: ['Endpoints match the frontend definitionService'],
-    tag: ['admin', 'all']
+    notes: [
+      'POST /sync : crée la table si absente, puis ajoute les colonnes manquantes',
+      'PUT /fields : modifie des colonnes existantes (MODIFY COLUMN)',
+    ],
+    tag: ['all', 'overview', 'submit-flow', 'schema-sync', 'create-form'],
+    critical: true,
+  }),
+  N('global-exception-handler', 'routes', 'GlobalExceptionHandler.java', 'Réponses d\'erreur uniformes', 780, 650, 180, 90, 'route', {
+    role: "Intercepte TableNotFoundException, IllegalArgumentException et toute autre Exception pour renvoyer un JSON d'erreur cohérent.",
+    plain: "Le traducteur d'erreurs : quel que soit le problème côté serveur, il renvoie toujours un message clair et bien formaté.",
+    path: 'BackEnd/BackEnd/src/main/java/com/soummam/backend/exception/GlobalExceptionHandler.java',
+    notes: [
+      "N'intercepte PAS EmptyResultDataAccessException (utilisée par findById) — FormDataController.getById() gère ce cas lui-même en local plutôt que via ce handler global (incohérence de style)",
+    ],
+    tag: ['all', 'overview'],
   }),
 
-  // Services
-  N('data-svc', 'services', 'DataService.java', 'Dynamic SQL builder', 1260, 100, 200, 50, 'var(--service)', {
-    role: 'Validates inputs and builds dynamic INSERT statements, splitting data between master and detail tables.',
-    plain: 'The database worker that writes the actual SQL queries to save the form. It splits the work between a main table and a specific form table.',
-    path: 'BackEnd/BackEnd/src/main/java/com/soummam/backend/service/DataService.java:83',
-    notes: ['line:71, Uses a Master-Detail pattern (t_document + doc_xxx tables)', 'line:77, Iterates over payload entries and wraps column names in backticks (`) to prevent SQL reserved keyword conflicts (like "date" or "desc").'],
-    tag: ['overview', 'forms', 'critical', 'all'],
-    critical: true
+  // --- Services (Java) -------------------------------------------------------
+  N('data-service', 'services', 'DataService.java', 'Orchestration + validation, délègue au Repository', 1030, 180, 160, 190, 'service', {
+    role: "Valide les identifiants SQL et orchestre les transactions (registre t_document + table fille), mais délègue désormais toute l'exécution SQL à DataRepository.",
+    plain: "Le chef d'orchestre qui décide QUOI faire (dans quel ordre, avec quelles vérifications) pour enregistrer ou relire une demande, sans plus écrire de SQL lui-même.",
+    path: 'BackEnd/BackEnd/src/main/java/com/soummam/backend/service/DataService.java',
+    notes: [
+      "RÉÉCRITURE (séparation des responsabilités) : ne contient plus de JdbcTemplate ni de SQL — délègue à DataRepository.tableExists/findAll/findById/ensureColumnExists/insertMasterDocument/insertDynamic",
+      "validateIdentifier(key) est appelé sur chaque clé du payload avant insertion (ligne 93-96), mais son résultat (mis en minuscule) n'est pas réinjecté dans le payload — sert uniquement à rejeter les identifiants invalides, la casse d'origine part telle quelle vers l'INSERT",
+      "N'enlève pas 'statut' du payload avant l'INSERT dans la table fille — valeur dupliquée entre t_document et la table fille",
+    ],
+    tag: ['all', 'overview', 'submit-flow', 'documents-list', 'view-detail'],
+    critical: true,
   }),
-  N('def-svc-java', 'services', 'DefinitionService.java', 'Schema to DDL mapper', 1260, 200, 200, 50, 'var(--service)', {
-    role: 'Parses nested JSON properties, flattening them with underscores to map to SQL columns.',
-    plain: 'Reads the JSON blueprint and figures out exactly what columns need to be created in the database.',
-    path: 'BackEnd/BackEnd/src/main/java/com/soummam/backend/service/DefinitionService.java:116',
-    notes: ['line:116, Recursively flattens objects (e.g. periode -> dateDebut becomes periode_datedebut). This matches FormEngine logic perfectly.', 'Forces lowercase column names.'],
-    tag: ['admin', 'all']
+  N('definition-service-java', 'services', 'DefinitionService.java', 'Logique DDL + JSON Schema → SQL', 1030, 380, 160, 150, 'service', {
+    role: "Valide les payloads DDL, convertit un JSON Schema en colonnes SQL typées, et délègue l'exécution au repository.",
+    plain: "Le traducteur qui transforme la description d'un formulaire (JSON) en instructions de construction de table (SQL).",
+    path: 'BackEnd/BackEnd/src/main/java/com/soummam/backend/service/DefinitionService.java',
+    notes: [
+      "CORRIGÉ (à nouveau) : le bloc de préfixage automatique 'doc_' est désormais commenté (/* ... */) dans extractAndValidateIdentifier() plutôt que supprimé (ligne 201-206) — désactivé mais laissé dans le code, donc réactivable par erreur d'un simple retrait de commentaire",
+      "createTable() / addColumns() / alterColumns() / syncSchema() ciblent à nouveau le même nom de table que DataService (DML) — plus de décalage doc_/sans-préfixe",
+      "syncSchema() aplatit récursivement les objets imbriqués avec '_', cohérent avec le frontend",
+    ],
+    tag: ['all', 'overview', 'submit-flow', 'schema-sync'],
+    critical: true,
   }),
 
-  // Data
-  N('data-repo', 'data', 'DataRepository.java', 'JdbcTemplate DML', 1560, 100, 200, 50, 'var(--db)', {
-    role: 'Executes transaction-safe inserts into t_document and the specific doc_xxx table.',
-    plain: 'The actual connection to the database that runs the insert commands.',
+  // --- Data & External -------------------------------------------------------
+  N('employe-repository', 'data', 'EmployeRepository.java', 'Spring Data JPA', 1260, 40, 190, 80, 'db', {
+    role: "Interface JPA générée automatiquement pour l'entité Employe (CRUD standard).",
+    plain: "Un raccourci automatique pour lire les employés en base, sans écrire de SQL à la main.",
+    path: 'BackEnd/BackEnd/src/main/java/com/soummam/backend/repository/EmployeRepository.java',
+    notes: ["extends JpaRepository<Employe, Integer> — aucune méthode custom"],
+    tag: ['all', 'employee-lookup'],
+  }),
+  N('employe-model', 'data', 'Employe.java', "Entité JPA → table t_employe", 1260, 140, 190, 80, 'db', {
+    role: "Entité JPA mappée sur la table t_employe (id_employe, nom, prenom, email, departement).",
+    plain: "La fiche d'un employé telle que stockée en base : nom, prénom, email, service.",
+    path: 'BackEnd/BackEnd/src/main/java/com/soummam/backend/model/Employe.java',
+    notes: ['@Table(name = "t_employe")'],
+    tag: ['all', 'employee-lookup'],
+  }),
+  N('definition-repository', 'data', 'DefinitionRepository.java', 'JDBC brut — DDL (CREATE/ALTER)', 1260, 240, 190, 170, 'db', {
+    role: "Exécute les instructions DDL brutes : CREATE TABLE, ALTER TABLE ADD/MODIFY COLUMN, et les requêtes d'introspection information_schema.",
+    plain: "Le maçon qui construit et modifie physiquement les tables MySQL selon les ordres reçus.",
+    path: 'BackEnd/BackEnd/src/main/java/com/soummam/backend/repository/DefinitionRepository.java',
+    notes: [
+      "CORRIGÉ : executeCreateTable() (ligne 26-31) crée désormais 'id INT AUTO_INCREMENT PRIMARY KEY' — la table obtient enfin une clé générée automatiquement, débloquant les INSERT dans une table fraîchement créée",
+      "Le Javadoc juste au-dessus (ligne 19-24) documente toujours 4 colonnes système (id UUID, num_doc, statut, created_at) qui ne correspondent plus au code réel (id est désormais un simple entier auto-incrémenté, pas un UUID) — décalage documentation/code qui subsiste, mais sans impact fonctionnel",
+      "listTables() liste les tables utilisateur via information_schema, exposé via DefinitionService.getTables() → GET /api/v1/definitions/table",
+    ],
+    tag: ['all', 'overview', 'submit-flow', 'schema-sync'],
+    critical: true,
+  }),
+  N('data-repository', 'data', 'DataRepository.java', 'JDBC brut — exécution SQL bas niveau', 1260, 430, 190, 130, 'db', {
+    role: "Exécute les requêtes SQL brutes via JdbcTemplate : vérification d'existence de table, ajout de colonne, lecture (toutes lignes / par ID), insertion dans t_document et insertion dynamique dans la table fille.",
+    plain: "Le technicien qui exécute concrètement chaque ordre SQL — DataService décide quoi faire, DataRepository sait comment le faire en SQL.",
     path: 'BackEnd/BackEnd/src/main/java/com/soummam/backend/repository/DataRepository.java',
-    notes: ['Uses JdbcTemplate instead of JPA because tables are completely dynamic'],
-    tag: ['overview', 'forms', 'critical', 'all'],
-    critical: true
+    notes: [
+      "RECONNECTÉ : cette classe existait déjà dans la version précédente mais n'était appelée par personne (code mort) — DataService délègue désormais réellement tout son SQL ici",
+      "insertDynamic() construit la liste de colonnes à partir des clés du payload SANS les mettre en minuscule (contrairement à l'ancienne version) — sans incidence, MySQL compare les noms de colonnes indépendamment de la casse",
+    ],
+    tag: ['all', 'overview', 'submit-flow', 'documents-list', 'view-detail'],
+    critical: true,
   }),
-  N('def-repo', 'data', 'DefinitionRepository.java', 'JdbcTemplate DDL', 1560, 200, 200, 50, 'var(--db)', {
-    role: 'Executes ALTER TABLE and CREATE TABLE commands.',
-    plain: 'The connection to the database that creates new tables and columns.',
-    path: 'BackEnd/BackEnd/src/main/java/com/soummam/backend/repository/DefinitionRepository.java:27',
-    notes: ['line:27, Creates tables with INT id as primary key (matching archi-exact architecture).'],
-    tag: ['admin', 'all']
+  N('mysql-db', 'data', 'MySQL — edocdb', 't_document · t_employe · doc_*', 1260, 580, 190, 100, 'external', {
+    role: "Base de données relationnelle : table maîtresse t_document, table t_employe, et une table par type de document (nom = tableName brut, sans préfixe).",
+    plain: "Le classeur final où toutes les données sont réellement stockées.",
+    path: 'BackEnd/BackEnd/src/main/resources/application.properties:3-5',
+    notes: ["Mot de passe par défaut en clair dans application.properties (valeur de repli si DB_PASSWORD absent)", 'spring.jpa.hibernate.ddl-auto=none — tout passe par JdbcTemplate manuel'],
+    tag: ['all', 'overview', 'submit-flow', 'documents-list', 'schema-sync', 'employee-lookup', 'view-detail'],
+    critical: true,
   }),
-  N('schema-json', 'data', 'demande_conge.json', 'Source of Truth', 1560, 300, 200, 50, 'var(--db)', {
-    role: 'JSON Schema file defining the form structure and validation rules.',
-    plain: 'The file that defines exactly what the vacation request form looks like and what fields it has.',
-    path: 'frontend/public/schema/demande_conge.json',
-    notes: ['Contains a nested "periode" object which proved tricky for column mapping.', 'This file is the single source of truth for the UI.'],
-    tag: ['overview', 'forms', 'critical', 'all'],
-    critical: true
-  })
+  N('static-schema-files', 'data', 'public/schema/*.json', 'registry.json + schémas Draft-07', 1260, 700, 190, 100, 'external', {
+    role: "Fichiers statiques servis par Vite : le registre des types de documents et un fichier JSON Schema par type.",
+    plain: "Les fiches techniques de chaque formulaire (quels champs, quelles règles), stockées en fichiers texte plutôt qu'en base.",
+    path: 'frontend/public/schema/registry.json',
+    notes: [
+      "4 schémas déclarés dans registry.json : demande_conge, requisition, decharge_materiel, ordre_mission",
+      "⚠️ proposition_promotion.json présent sur le disque mais ABSENT de registry.json → totalement inaccessible depuis l'UI",
+      "⚠️ proposition_promotion.json a en plus un titre/description qui parlent d'\"Ordre de Mission\" alors que documentType vaut 'PROPOSITION_PROMOTION' — métadonnées incohérentes, probable copier-coller",
+    ],
+    tag: ['all', 'overview', 'submit-flow', 'documents-list', 'schema-sync', 'create-form', 'view-detail'],
+  }),
 ];
 
+// ===========================================================================
+// EDGES
+// ===========================================================================
 const edges = [
-  // Form submission flow (Critical Path)
-  { from: 'view-form', to: 'schema-json', kind: 'critical', label: '1 → Loads schema', tag: ['overview', 'forms', 'critical', 'all'] },
-  { from: 'view-form', to: 'form-engine', kind: 'critical', label: '2 → Renders', tag: ['overview', 'forms', 'critical', 'all'] },
-  { from: 'form-engine', to: 'form-data-svc', kind: 'critical', label: '3 → POST flattened payload', tag: ['overview', 'forms', 'critical', 'all'] },
-  { from: 'form-data-svc', to: 'form-data-ctrl', kind: 'critical', label: '4 → HTTP POST /api/v1/...', tag: ['overview', 'forms', 'critical', 'all'] },
-  { from: 'form-data-ctrl', to: 'data-svc', kind: 'critical', label: '5 → insert()', tag: ['overview', 'forms', 'critical', 'all'] },
-  { from: 'data-svc', to: 'data-repo', kind: 'critical', label: '6 → jdbc.update()', tag: ['overview', 'forms', 'critical', 'all'] },
+  // -- Mount / routing --
+  { from: 'main-jsx', to: 'app-jsx', kind: 'mount', label: 'render <App/>', tag: ['all', 'overview'] },
+  { from: 'app-jsx', to: 'layout-shell', kind: 'mount', label: 'wraps routes', tag: ['all', 'overview'] },
+  { from: 'app-jsx', to: 'dashboard', kind: 'mount', label: "GET /", tag: ['all', 'overview', 'documents-list'] },
+  { from: 'app-jsx', to: 'doc-type-manager', kind: 'mount', label: 'GET /document-manager/:schemaName', tag: ['all', 'overview', 'documents-list', 'schema-sync'] },
+  { from: 'app-jsx', to: 'view-form', kind: 'critical', label: 'GET /view/:schemaName', tag: ['all', 'overview', 'submit-flow', 'schema-sync'] },
+  { from: 'app-jsx', to: 'document-view-page', kind: 'mount', label: 'GET /view/:tableName/:id (NOUVEAU)', tag: ['all', 'overview', 'view-detail'] },
+  { from: 'app-jsx', to: 'create-form', kind: 'mount', label: 'GET /create (non lié au menu)', tag: ['all', 'create-form'] },
 
-  // Schema sync flow
-  { from: 'view-form', to: 'form-data-svc', kind: 'normal', label: 'syncSchema (non-blocking)', tag: ['forms', 'all'] },
-  { from: 'doc-manager', to: 'form-data-svc', kind: 'normal', label: 'manual syncSchema', tag: ['admin', 'all'] },
-  { from: 'form-data-svc', to: 'form-def-ctrl', kind: 'mount', label: 'HTTP POST /api/v1/definitions/sync', tag: ['admin', 'forms', 'all'] },
-  { from: 'form-def-ctrl', to: 'def-svc-java', kind: 'normal', label: 'syncSchema()', tag: ['admin', 'all'] },
-  { from: 'def-svc-java', to: 'def-repo', kind: 'db', label: 'executeAddColumn()', tag: ['admin', 'all'] },
+  // -- Critical submit-flow spine --
+  { from: 'view-form', to: 'static-schema-files', kind: 'critical', label: 'fetch /schema/{name}.json', tag: ['all', 'overview', 'submit-flow', 'schema-sync'] },
+  { from: 'view-form', to: 'formdata-service-js', kind: 'critical', label: 'syncSchema(name, data)', tag: ['all', 'overview', 'submit-flow', 'schema-sync'] },
+  { from: 'formdata-service-js', to: 'formdefinition-controller', kind: 'critical', label: 'POST /api/v1/definitions/sync', tag: ['all', 'overview', 'submit-flow', 'schema-sync'] },
+  { from: 'formdefinition-controller', to: 'definition-service-java', kind: 'critical', label: 'syncSchema(tableName, schema)', tag: ['all', 'overview', 'submit-flow', 'schema-sync'] },
+  { from: 'definition-service-java', to: 'definition-repository', kind: 'critical', label: 'executeCreateTable / executeAddColumn', tag: ['all', 'overview', 'submit-flow', 'schema-sync'] },
+  { from: 'definition-repository', to: 'mysql-db', kind: 'db', label: 'CREATE / ALTER TABLE (4 colonnes système)', tag: ['all', 'overview', 'submit-flow', 'schema-sync'] },
 
-  // Form rendering internals
-  { from: 'form-engine', to: 'render', kind: 'normal', label: 'renderField()', tag: ['forms', 'all'] },
-  { from: 'render', to: 'api-js', kind: 'normal', label: 'getEmployeById()', tag: ['forms', 'all'] },
-  
-  // Dead code
-  { from: 'doc-manager', to: 'def-svc', kind: 'normal', label: 'creerTable (via DDL builder)', tag: ['admin', 'all'] }
+  { from: 'view-form', to: 'form-engine-orchestrator', kind: 'critical', label: '<FormEngine schema=.../>', tag: ['all', 'overview', 'submit-flow'] },
+  { from: 'form-engine-orchestrator', to: 'json-parser', kind: 'critical', label: 'parser.parse(schema)', tag: ['all', 'overview', 'submit-flow'] },
+  { from: 'form-engine-orchestrator', to: 'validation-manager', kind: 'critical', label: 'validateFormData()', tag: ['all', 'overview', 'submit-flow'] },
+  { from: 'form-engine-orchestrator', to: 'view-form', kind: 'critical', label: 'onSubmit(payload) → handleVerify', tag: ['all', 'overview', 'submit-flow'] },
+  { from: 'view-form', to: 'formdata-service-js', kind: 'critical', label: 'insert(tableName, payload) [handleConfirm]', tag: ['all', 'overview', 'submit-flow'] },
+  { from: 'formdata-service-js', to: 'formdata-controller', kind: 'critical', label: 'POST /api/v1/form-data/{tableName}', tag: ['all', 'overview', 'submit-flow'] },
+  { from: 'formdata-controller', to: 'data-service', kind: 'critical', label: 'insert(tableName, payload)', tag: ['all', 'overview', 'submit-flow'] },
+  { from: 'data-service', to: 'data-repository', kind: 'critical', label: 'insertMasterDocument() + insertDynamic()', tag: ['all', 'overview', 'submit-flow'] },
+  { from: 'data-repository', to: 'mysql-db', kind: 'db', label: 'INSERT INTO t_document, puis INTO {tableName}', tag: ['all', 'overview', 'submit-flow'] },
+
+  // -- Form engine internal wiring --
+  { from: 'form-engine-orchestrator', to: 'render-jsx', kind: 'normal', label: 'renderField() incl. EmployeLookup', tag: ['all', 'overview', 'submit-flow', 'employee-lookup'] },
+  { from: 'form-engine-orchestrator', to: 'field-registry', kind: 'normal', label: 'getFieldControl() / getInitialValue()', tag: ['all', 'overview', 'submit-flow'] },
+  { from: 'form-engine-orchestrator', to: 'expression-evaluator', kind: 'normal', label: 'buildRequiredFields() / evaluateFieldStates()', tag: ['all', 'overview', 'submit-flow'] },
+
+  // -- View-detail (new consult flow) --
+  { from: 'documents-list', to: 'document-view-page', kind: 'normal', label: "clic 'Consulter' → navigate", tag: ['all', 'documents-list', 'view-detail'] },
+  { from: 'document-view-page', to: 'static-schema-files', kind: 'api', label: 'fetch /schema/{tableName}.json', tag: ['all', 'overview', 'view-detail'] },
+  { from: 'document-view-page', to: 'formdata-service-js', kind: 'critical', label: 'findById(tableName, id)', tag: ['all', 'overview', 'view-detail'] },
+  { from: 'formdata-service-js', to: 'formdata-controller', kind: 'api', label: 'GET /api/v1/form-data/{tableName}/{id}', tag: ['all', 'overview', 'view-detail'] },
+  { from: 'formdata-controller', to: 'data-service', kind: 'normal', label: 'findById(tableName, id)', tag: ['all', 'overview', 'view-detail'] },
+  { from: 'data-service', to: 'data-repository', kind: 'critical', label: 'findById(safe, id)', tag: ['all', 'overview', 'view-detail'] },
+  { from: 'data-repository', to: 'mysql-db', kind: 'db', label: 'SELECT * FROM {tableName} WHERE id = ?', tag: ['all', 'overview', 'view-detail'] },
+  { from: 'document-view-page', to: 'form-engine-orchestrator', kind: 'normal', label: '<FormRenderer initialData=... globalReadOnly/>', tag: ['all', 'overview', 'view-detail'] },
+
+  // -- Employee lookup feature --
+  { from: 'render-jsx', to: 'api-service', kind: 'normal', label: 'getEmployeById(id)', tag: ['all', 'employee-lookup'] },
+  { from: 'api-service', to: 'employe-controller', kind: 'api', label: 'GET /api/v1/employes/{id}', tag: ['all', 'employee-lookup'] },
+  { from: 'employe-controller', to: 'employe-repository', kind: 'normal', label: 'findById()', tag: ['all', 'employee-lookup'] },
+  { from: 'employe-repository', to: 'employe-model', kind: 'normal', label: 'maps rows to', tag: ['all', 'employee-lookup'] },
+  { from: 'employe-repository', to: 'mysql-db', kind: 'db', label: 'SELECT t_employe', tag: ['all', 'employee-lookup'] },
+
+  // -- Documents list / dashboard feature --
+  { from: 'dashboard', to: 'use-documents-hook', kind: 'normal', label: 'useDocuments()', tag: ['all', 'overview', 'documents-list'] },
+  { from: 'documents-list', to: 'use-documents-hook', kind: 'normal', label: 'useDocuments()', tag: ['all', 'overview', 'documents-list'] },
+  { from: 'doc-type-manager', to: 'use-documents-hook', kind: 'normal', label: 'useDocuments()', tag: ['all', 'overview', 'documents-list'] },
+  { from: 'use-documents-hook', to: 'static-schema-files', kind: 'api', label: 'fetch registry.json + per-schema check', tag: ['all', 'overview', 'documents-list'] },
+  { from: 'use-documents-hook', to: 'expression-evaluator', kind: 'normal', label: 'isValidSchemaStructure()', tag: ['all', 'overview', 'documents-list'] },
+  { from: 'documents-list', to: 'formdata-service-js', kind: 'normal', label: 'formDataService.all(tableToQuery)', tag: ['all', 'overview', 'documents-list'] },
+  { from: 'doc-type-manager', to: 'formdata-service-js', kind: 'normal', label: 'formDataService.all() + syncSchema()', tag: ['all', 'overview', 'documents-list', 'schema-sync'] },
+  { from: 'doc-type-manager', to: 'view-form', kind: 'normal', label: "clic 'Consulter' → navigate(/view/:schemaName) — pas encore migré vers la vue détail", tag: ['all', 'documents-list'] },
+  { from: 'formdata-service-js', to: 'formdata-controller', kind: 'api', label: 'GET /api/v1/form-data/{tableName}', tag: ['all', 'overview', 'documents-list'] },
+  { from: 'formdata-controller', to: 'data-service', kind: 'normal', label: 'findAll(tableName)', tag: ['all', 'overview', 'documents-list'] },
+  { from: 'data-service', to: 'data-repository', kind: 'normal', label: 'findAll(safe)', tag: ['all', 'overview', 'documents-list'] },
+  { from: 'data-repository', to: 'mysql-db', kind: 'db', label: 'SELECT * FROM {tableName}', tag: ['all', 'overview', 'documents-list'] },
+
+  // -- Create-form (unlinked) feature --
+  { from: 'create-form', to: 'json-parser', kind: 'normal', label: 'parser.toMysqlPayload(schema)', tag: ['all', 'create-form'] },
+  { from: 'create-form', to: 'definition-service-js', kind: 'normal', label: 'creerTable() / creerChamps()', tag: ['all', 'create-form'] },
+  { from: 'definition-service-js', to: 'formdefinition-controller', kind: 'api', label: 'POST /definitions/table & /fields', tag: ['all', 'create-form'] },
+
+  // -- Backend scaffolding --
+  { from: 'backend-application', to: 'web-config', kind: 'normal', label: 'component scan', tag: ['all', 'overview'] },
+  { from: 'backend-application', to: 'formdata-controller', kind: 'mount', label: 'component scan', tag: ['all', 'overview'] },
+  { from: 'backend-application', to: 'formdefinition-controller', kind: 'mount', label: 'component scan', tag: ['all', 'overview'] },
+  { from: 'backend-application', to: 'employe-controller', kind: 'mount', label: 'component scan', tag: ['all', 'overview', 'employee-lookup'] },
+  { from: 'formdata-controller', to: 'global-exception-handler', kind: 'normal', label: 'DataAccessException → 400', tag: ['all', 'overview'] },
+  { from: 'formdefinition-controller', to: 'global-exception-handler', kind: 'normal', label: 'TableNotFoundException → 404', tag: ['all', 'overview'] },
 ];
 
+// ===========================================================================
+// FIXES + KNOWN BUGS
+// ===========================================================================
 const FIXES = {
-  'data-svc': [{ n: 1, t: 'Added backticks around SQL identifiers to prevent keyword conflicts (e.g. "date", "desc").' }],
-  'form-data-ctrl': [{ n: 1, t: 'Added try-catch to intercept DataAccessException and return 400 Bad Request with details, replacing 500 error.' }],
-  'form-data-svc': [{ n: 1, t: 'Extracts errorData.details from HTTP 400 to show users the exact MySQL error (e.g. Unknown column).' }],
-  'data-repo': [{ n: 1, t: 'Resolved git merge conflicts between main and archi-exact branches.' }]
+  'definition-service-java': [
+    { n: 5, t: "Le préfixage automatique 'doc_' est de nouveau désactivé (bloc commenté) — les opérations DDL ciblent à nouveau le même nom de table que les opérations DML de DataService." },
+  ],
+  'data-service': [
+    { n: 5, t: "findAll(), findById() et insert() ciblent de nouveau exactement le même nom de table que la création (plus de préfixe 'doc_' asymétrique)." },
+    { n: 6, t: "Refactor en couches : toute l'exécution SQL est déléguée à DataRepository ; DataService ne conserve que la validation et l'orchestration transactionnelle." },
+  ],
+  'data-repository': [
+    { n: 7, t: "Classe reconnectée : elle existait déjà (inutilisée) dans la version précédente et est désormais réellement appelée par DataService pour tout accès SQL bas niveau." },
+  ],
+  'doc-type-manager': [
+    { n: 4, t: "Le bouton 'Consulter' navigue vers /view/{schemaName}/{doc.id}, aligné sur la vue de consultation dédiée." },
+  ],
+  'form-engine-orchestrator': [
+    { n: 10, t: "Effet de normalisation : les données rechargées depuis MySQL (clés en minuscules) sont remappées vers les clés camelCase du schéma avant affichage en consultation." },
+  ],
+  'json-parser': [
+    { n: 1, t: "Colonnes système exclues du payload ALTER pour éviter un doublon DDL." },
+    { n: 2, t: "Séparateur '_' au lieu de '.' pour des noms de colonnes SQL valides." },
+  ],
+  'documents-list': [
+    { n: 4, t: "Le bouton 'Consulter' navigue vers /view/{table}/{id} et mémorise tableName au chargement plutôt que de le redéduire à l'affichage." },
+  ],
+  'document-view-page': [
+    { n: 11, t: "Le bouton 'Retour' utilise désormais l'historique de navigation du navigateur quand c'est possible, au lieu de toujours rediriger vers /documents." },
+  ],
+  'definition-repository': [
+    { n: 12, t: "executeCreateTable() crée désormais 'id INT AUTO_INCREMENT PRIMARY KEY' au lieu de 'id INT PRIMARY KEY' sans valeur par défaut — débloque enfin l'INSERT dans une table fraîchement créée, qui échouait systématiquement jusqu'ici." },
+  ],
 };
 
 const KNOWN_BUGS = {
-  'def-svc': [{ sev: 'low', ref: 'updateFields', t: 'updateFields has zero callers. It is dead code.' }]
+  'data-service': [
+    { sev: 'low', ref: 'DataService.java:93-99', t: "validateIdentifier(key) est appelé pour valider chaque nom de colonne du payload, mais son résultat mis en minuscule n'est jamais réutilisé pour la construction de l'INSERT (fait dans DataRepository avec la casse d'origine) — sans conséquence pratique car MySQL compare les noms de colonnes indépendamment de la casse, mais incohérent avec le reste du code qui normalise systématiquement en minuscule." },
+    { sev: 'low', ref: 'DataService.java:90-99', t: "Le payload complet (y compris 'statut') est inséré tel quel dans la table fille en plus du registre t_document — duplication de données entre les deux tables." },
+  ],
+  'layout-shell': [
+    { sev: 'med', ref: 'Sidebar.jsx:30-31 (lien supprimé)', t: "Le lien de menu 'Mes Documents' reste supprimé. CreateForm.jsx (/create) reste accessible par saisie directe d'URL, mais DocumentsList.jsx (/documents) ne l'est même plus (voir bug App.jsx / documents-list)." },
+  ],
+  'static-schema-files': [
+    { sev: 'med', ref: 'public/schema/proposition_promotion.json', t: "Toujours présent sur le disque mais absent de registry.json → inaccessible depuis l'interface. Son titre/description parlent toujours d'\"Ordre de Mission\" alors que documentType vaut 'PROPOSITION_PROMOTION'." },
+  ],
+  'documents-list': [
+    { sev: 'low', ref: 'DocumentsList.jsx:15,45,78,168', t: "Corruption d'encodage toujours partiellement présente — 'récupération', 'sélectionner' et 'trouvé' restent affichés avec des séquences illisibles ('├®')." },
+    { sev: 'med', ref: 'App.jsx (import retiré)', t: "Le composant n'est plus importé ni routé nulle part dans App.jsx — code entièrement mort, inatteignable même par URL directe." },
+  ],
+  'document-view-page': [
+    { sev: 'low', ref: "DocumentViewPage.jsx:84", t: "Le repli du bouton 'Retour' navigue vers '/documents?type=...', une route qui n'existe plus dans App.jsx depuis le retrait de l'import DocumentsList — l'utilisateur est redirigé vers le Dashboard ('/') via le wildcard, perdant le filtre de type." },
+  ],
+  'global-exception-handler': [
+    { sev: 'low', ref: 'FormDataController.java vs GlobalExceptionHandler.java', t: "getById() attrape EmptyResultDataAccessException localement dans le contrôleur au lieu de laisser le GlobalExceptionHandler centralisé s'en charger — incohérent avec le reste de l'application." },
+  ],
+  'mysql-db': [
+    { sev: 'low', ref: 'application.properties:4-5', t: "Identifiants MySQL désormais externalisables via DB_USERNAME/DB_PASSWORD, mais les valeurs de repli ('root' / mot de passe en clair) restent codées en dur dans le fichier versionné." },
+  ],
 };
 
-// =========================================================================
-// Rendering Engine
-// =========================================================================
-let currentFilter = 'overview';
-let activeNode = null;
+// ===========================================================================
+// RENDERING
+// ===========================================================================
+const svg = document.getElementById('map');
+const NS = 'http://www.w3.org/2000/svg';
+const el = (tag, attrs = {}) => {
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  return e;
+};
 
-const svg = document.getElementById('canvas');
-const viewport = document.getElementById('viewport');
+const colorVar = (c) => `var(--${c})`;
+const nodeById = Object.fromEntries(nodes.map(n => [n.id, n]));
+
+function clusterFillTint(color) {
+  const map = { client: '#132233', route: '#132518', service: '#231a2c', db: '#2b230f', external: '#2b1420' };
+  return map[color] || '#181818';
+}
+
+// compute canvas size from cluster extents
+const CANVAS_W = Math.max(...clusters.map(c => c.x + c.w)) + 40;
+const CANVAS_H = Math.max(...clusters.map(c => c.y + c.h)) + 40;
+svg.setAttribute('viewBox', `0 0 ${CANVAS_W} ${CANVAS_H}`);
+svg.setAttribute('width', CANVAS_W);
+svg.setAttribute('height', CANVAS_H);
+
+const layerClusters = el('g', { id: 'layer-clusters' });
+const layerEdges = el('g', { id: 'layer-edges' });
+const layerNodes = el('g', { id: 'layer-nodes' });
+svg.appendChild(layerClusters);
+svg.appendChild(layerEdges);
+svg.appendChild(layerNodes);
+
+// arrow marker defs
+const defs = el('defs');
+['normal', 'critical', 'api', 'db', 'mount'].forEach(kind => {
+  const colorMap = { normal: '#666', critical: '#ff3860', api: '#ff9f4e', db: '#ffb86b', mount: '#4ea1ff' };
+  const marker = el('marker', {
+    id: `arrow-${kind}`, viewBox: '0 0 10 10', refX: '9', refY: '5',
+    markerWidth: '7', markerHeight: '7', orient: 'auto-start-reverse'
+  });
+  const path = el('path', { d: 'M 0 0 L 10 5 L 0 10 z', fill: colorMap[kind] });
+  marker.appendChild(path);
+  defs.appendChild(marker);
+});
+svg.appendChild(defs);
+
+// clusters
+clusters.forEach(c => {
+  const g = el('g');
+  const box = el('rect', {
+    x: c.x, y: c.y, width: c.w, height: c.h, class: 'cluster-box',
+    fill: clusterFillTint(nodes.find(n => n.cluster === c.id)?.color), stroke: '#333'
+  });
+  const label = el('text', { x: c.x + 14, y: c.y + 24, class: 'cluster-label' });
+  label.textContent = c.label;
+  g.appendChild(box); g.appendChild(label);
+  layerClusters.appendChild(g);
+});
+
+// edge path generator (cubic bezier through the horizontal gutter)
+function edgePath(a, b) {
+  const x1 = a.x + a.w, y1 = a.y + a.h / 2;
+  const x2 = b.x, y2 = b.y + b.h / 2;
+  const dx = Math.max(40, (x2 - x1) * 0.5);
+  return { d: `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`, mx: (x1 + x2) / 2, my: (y1 + y2) / 2 };
+}
+// same-column / backward edges use a horizontal loop
+function edgePathLoop(a, b) {
+  const x1 = a.x + a.w, y1 = a.y + a.h / 2;
+  const x2 = b.x + b.w, y2 = b.y + b.h / 2;
+  const bulge = 70;
+  return { d: `M ${x1} ${y1} C ${x1 + bulge} ${y1}, ${x2 + bulge} ${y2}, ${x2} ${y2}`, mx: x1 + bulge, my: (y1 + y2) / 2 };
+}
+
+const edgeEls = [];
+edges.forEach((e, i) => {
+  const a = nodeById[e.from], b = nodeById[e.to];
+  if (!a || !b) return;
+  const backward = b.x < a.x;
+  const { d, mx, my } = backward ? edgePathLoop(a, b) : edgePath(a, b);
+  const colorMap = { normal: '#666', critical: '#ff3860', api: '#ff9f4e', db: '#ffb86b', mount: '#4ea1ff' };
+  const path = el('path', {
+    d, class: 'edge-path', stroke: colorMap[e.kind] || '#666',
+    'stroke-width': e.kind === 'critical' ? 2 : 1.3,
+    'marker-end': `url(#arrow-${e.kind})`,
+  });
+  layerEdges.appendChild(path);
+
+  const label = el('text', { x: mx, y: my - 5, class: 'edge-label', 'text-anchor': 'middle' });
+  label.textContent = e.label || '';
+  layerEdges.appendChild(label);
+
+  edgeEls.push({ e, path, label });
+});
+
+// nodes
+const nodeEls = {};
+nodes.forEach(n => {
+  const g = el('g', { class: 'node-group', 'data-id': n.id });
+  const rect = el('rect', {
+    x: n.x, y: n.y, width: n.w, height: n.h, rx: 10,
+    class: 'node-rect' + (n.critical ? ' critical' : ''),
+    fill: `${colorVar(n.color)}22`, stroke: colorVar(n.color),
+  });
+  g.appendChild(rect);
+
+  const label = el('text', { x: n.x + 12, y: n.y + 22, class: 'node-label' });
+  label.textContent = n.label;
+  g.appendChild(label);
+
+  if (n.sub) {
+    const sub = el('text', { x: n.x + 12, y: n.y + 38, class: 'node-sub' });
+    sub.textContent = n.sub;
+    g.appendChild(sub);
+  }
+
+  if (n.dead) {
+    const dead = el('text', { x: n.x + 12, y: n.y + n.h - 10, class: 'node-dead' });
+    dead.textContent = n.dead;
+    g.appendChild(dead);
+  }
+
+  // badges
+  const fixCount = (FIXES[n.id] || []).length;
+  const bugCount = (KNOWN_BUGS[n.id] || []).length;
+  let bx = n.x + n.w - 16;
+  if (bugCount) {
+    const bg = el('g', { class: 'badge badge-bug' });
+    bg.appendChild(el('circle', { cx: bx, cy: n.y + 12, r: 9 }));
+    const t = el('text', { x: bx, y: n.y + 15.5, 'text-anchor': 'middle' });
+    t.textContent = bugCount;
+    bg.appendChild(t);
+    g.appendChild(bg);
+    bx -= 22;
+  }
+  if (fixCount) {
+    const fg = el('g', { class: 'badge badge-fix' });
+    fg.appendChild(el('circle', { cx: bx, cy: n.y + 12, r: 9 }));
+    const t = el('text', { x: bx, y: n.y + 15.5, 'text-anchor': 'middle' });
+    t.textContent = fixCount;
+    fg.appendChild(t);
+    g.appendChild(fg);
+  }
+
+  layerNodes.appendChild(g);
+  nodeEls[n.id] = g;
+
+  g.addEventListener('click', (ev) => { ev.stopPropagation(); selectNode(n.id); });
+  g.addEventListener('mouseenter', () => { if (!selectedId) hoverNode(n.id); });
+  g.addEventListener('mouseleave', () => { if (!selectedId) hoverNode(null); });
+});
+
+// ===========================================================================
+// FILTER CHIPS
+// ===========================================================================
+const chipDefs = [
+  { id: 'overview', label: 'Overview' },
+  { id: 'submit-flow', label: 'Parcours de soumission (critique)' },
+  { id: 'view-detail', label: 'Consultation lecture seule (NOUVEAU)' },
+  { id: 'schema-sync', label: 'Synchro schéma → MySQL' },
+  { id: 'employee-lookup', label: 'Recherche employé' },
+  { id: 'documents-list', label: 'Listes de documents' },
+  { id: 'create-form', label: 'Création de schéma (non liée)' },
+  { id: 'all', label: 'Afficher tous les fils' },
+  { id: 'roadmap-bugs', label: 'Roadmap & bugs' },
+];
+let activeChip = 'overview';
+const chipsWrap = document.getElementById('chips');
+chipDefs.forEach(c => {
+  const btn = document.createElement('div');
+  btn.className = 'chip' + (c.id === activeChip ? ' active' : '');
+  btn.textContent = c.label;
+  btn.dataset.id = c.id;
+  btn.addEventListener('click', () => setActiveChip(c.id));
+  chipsWrap.appendChild(btn);
+});
+
+function setActiveChip(id) {
+  activeChip = id;
+  [...chipsWrap.children].forEach(c => c.classList.toggle('active', c.dataset.id === id));
+  applyFilter();
+}
+
+function applyFilter() {
+  const tag = activeChip;
+  nodes.forEach(n => {
+    const g = nodeEls[n.id];
+    let show;
+    if (tag === 'roadmap-bugs') {
+      show = !!(FIXES[n.id] || KNOWN_BUGS[n.id]);
+    } else {
+      show = n.tag.includes(tag);
+    }
+    g.classList.toggle('dimmed', !show);
+  });
+  edgeEls.forEach(({ e, path, label }) => {
+    let show;
+    if (tag === 'roadmap-bugs') {
+      show = (FIXES[e.from] || KNOWN_BUGS[e.from] || FIXES[e.to] || KNOWN_BUGS[e.to]);
+    } else {
+      show = e.tag.includes(tag);
+    }
+    path.classList.toggle('dimmed', !show);
+    label.classList.toggle('dimmed', !show);
+  });
+}
+applyFilter();
+
+// ===========================================================================
+// SELECTION / SIDEBAR
+// ===========================================================================
+let selectedId = null;
 const sidebar = document.getElementById('sidebar');
 
-// 1. Draw Clusters
-clusters.forEach(c => {
-  const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-  g.className = 'cluster';
-  g.innerHTML = `
-    <rect x="${c.x}" y="${c.y}" width="${c.w}" height="${c.h}" fill="${c.color}"></rect>
-    <text x="${c.x + 10}" y="${c.y - 10}">${c.label.toUpperCase()}</text>
+function connectedEdges(id) {
+  return edges.filter(e => e.from === id || e.to === id);
+}
+
+function renderDefaultSidebar() {
+  sidebar.innerHTML = `
+    <h2>Vue d'ensemble</h2>
+    <div class="plain-box">
+      <span class="lbl">À propos</span>
+      Edoc-Soummam est un moteur de génération de documents dynamiques : un schéma JSON décrit un formulaire, le frontend le rend et le valide, puis le backend crée/synchronise une table MySQL correspondante et y enregistre les réponses.
+    </div>
+    <div class="plain-box" style="border-color:rgba(123,211,137,0.4); background:rgba(123,211,137,0.08);">
+      <span class="lbl" style="color:#7bd389;">✓ Bug de décalage table à nouveau corrigé</span>
+      Le préfixage automatique <code>doc_</code> dans <code>DefinitionService</code> a été redésactivé (bloc commenté). Les noms de table DDL (créer/synchroniser) et DML (lire/écrire) sont de nouveau cohérents. Attention : le code du hack est toujours présent, juste commenté — il pourrait être réactivé par erreur.
+    </div>
+    <div class="plain-box" style="border-color:rgba(123,211,137,0.4); background:rgba(123,211,137,0.08);">
+      <span class="lbl" style="color:#7bd389;">✓ Bug bloquant de soumission corrigé</span>
+      <code>DefinitionRepository.executeCreateTable()</code> crée désormais <code>id INT AUTO_INCREMENT PRIMARY KEY</code> au lieu de <code>id INT PRIMARY KEY</code> sans valeur par défaut. C'était le principal obstacle empêchant tout INSERT dans une table de document fraîchement créée — il est levé.
+    </div>
+    <div class="plain-box" style="border-color:rgba(255,56,96,0.4); background:rgba(255,56,96,0.08);">
+      <span class="lbl" style="color:var(--critical);">⚠️ Nouveau problème introduit</span>
+      L'import mort de <code>DocumentsList</code> a été retiré de <code>App.jsx</code>, confirmant qu'aucune route <code>/documents</code> n'existe plus du tout (elle n'était déjà pas déclarée). Conséquence en cascade : le bouton "Retour" de <code>DocumentViewPage.jsx</code> qui repliait vers <code>/documents?type=...</code> atterrit maintenant sur le wildcard <code>*</code> et redirige vers le Dashboard, perdant le contexte du type de document.
+    </div>
+    <h3 class="section">Ce qui a changé dans cette version</h3>
+    <ul class="findings" style="padding-left:18px; font-size:12.5px; color:var(--text); line-height:1.6;">
+      <li><strong style="color:#7bd389;">Corrigé :</strong> <code>DefinitionRepository.executeCreateTable()</code> génère maintenant un <code>id</code> auto-incrémenté — le parcours de soumission complet (créer table → remplir formulaire → INSERT) devrait désormais fonctionner de bout en bout sur une table neuve.</li>
+      <li><strong style="color:var(--critical);">Nouveau (régression mineure) :</strong> <code>DocumentsList.jsx</code> est désormais du code totalement mort — plus aucun import ni route ne le référence dans <code>App.jsx</code>, ce qui casse le repli du bouton "Retour" de la vue détail.</li>
+      <li><strong>Toujours en suspens :</strong> le lien "Mes Documents" reste absent du menu, <code>proposition_promotion.json</code> reste un schéma fantôme non enregistré, la corruption d'encodage dans <code>DocumentsList.jsx</code> n'est que partiellement réparée, et le Javadoc de <code>DefinitionRepository</code> décrit toujours 4 colonnes système (dont un <code>id</code> UUID) qui ne correspondent plus au code réel.</li>
+    </ul>
+    <h3 class="section">Légende</h3>
+    <div class="legend-row"><span class="dot" style="background:var(--client)"></span> Client / UI</div>
+    <div class="legend-row"><span class="dot" style="background:var(--route)"></span> Route / Contrôleur</div>
+    <div class="legend-row"><span class="dot" style="background:var(--service)"></span> Service / Logique</div>
+    <div class="legend-row"><span class="dot" style="background:var(--db)"></span> Accès données</div>
+    <div class="legend-row"><span class="dot" style="background:var(--external)"></span> Externe (DB, fichiers statiques)</div>
+    <div class="legend-row"><span style="width:16px;height:2px;background:var(--critical);display:inline-block;"></span> Chemin critique</div>
+    <p class="empty-hint" style="margin-top:14px;">Cliquez un nœud pour voir son rôle, son code, et ses connexions. Cliquez le fond pour revenir ici.</p>
   `;
-  viewport.appendChild(g);
-});
-
-// 2. Draw Edges
-const edgeG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-viewport.appendChild(edgeG);
-
-function drawEdges() {
-  edgeG.innerHTML = '';
-  edges.forEach(e => {
-    if (!e.tag.includes(currentFilter) && currentFilter !== 'roadmap') return;
-    
-    const fromN = nodes.find(n => n.id === e.from);
-    const toN = nodes.find(n => n.id === e.to);
-    if (!fromN || !toN) return;
-    
-    const isDimmed = activeNode && (e.from !== activeNode && e.to !== activeNode);
-    if (currentFilter === 'roadmap' && !FIXES[e.from] && !KNOWN_BUGS[e.from] && !FIXES[e.to] && !KNOWN_BUGS[e.to]) {
-      return;
-    }
-
-    const startX = fromN.x + fromN.w;
-    const startY = fromN.y + fromN.h / 2;
-    const endX = toN.x;
-    const endY = toN.y + toN.h / 2;
-    
-    const dist = Math.max(Math.abs(endX - startX) / 2, 50);
-    const pathD = `M ${startX} ${startY} C ${startX + dist} ${startY}, ${endX - dist} ${endY}, ${endX} ${endY}`;
-    
-    let marker = 'arrow-normal';
-    if (e.kind === 'critical') marker = 'arrow-critical';
-    else if (e.kind === 'api') marker = 'arrow-api';
-    else if (e.kind === 'db') marker = 'arrow-db';
-    else if (e.kind === 'mount') marker = 'arrow-route';
-    
-    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    path.setAttribute('d', pathD);
-    path.className = `edge ${e.kind} ${isDimmed ? 'dimmed' : ''}`;
-    path.setAttribute('marker-end', `url(#${marker})`);
-    
-    const midX = startX + (endX - startX) / 2;
-    const midY = startY + (endY - startY) / 2;
-    
-    const textBg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-    textBg.className = `edge-label-bg ${isDimmed ? 'dimmed' : ''}`;
-    
-    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    text.className = `edge-label ${isDimmed ? 'dimmed' : ''}`;
-    text.setAttribute('x', midX);
-    text.setAttribute('y', midY + 3);
-    text.setAttribute('text-anchor', 'middle');
-    text.textContent = e.label;
-    
-    edgeG.appendChild(path);
-    edgeG.appendChild(text);
-    
-    setTimeout(() => {
-      if (text.parentNode === edgeG) {
-        try {
-          const bbox = text.getBBox();
-          textBg.setAttribute('x', bbox.x - 4);
-          textBg.setAttribute('y', bbox.y - 2);
-          textBg.setAttribute('width', bbox.width + 8);
-          textBg.setAttribute('height', bbox.height + 4);
-          edgeG.insertBefore(textBg, text);
-        } catch(err) {}
-      }
-    }, 0);
-  });
 }
 
-// 3. Draw Nodes
-const nodeG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-viewport.appendChild(nodeG);
+function selectNode(id) {
+  selectedId = id;
+  applySelectionDimming();
+  const n = nodeById[id];
+  const edgesFor = connectedEdges(id);
+  const incoming = edgesFor.filter(e => e.to === id);
+  const outgoing = edgesFor.filter(e => e.from === id);
 
-function drawNodes() {
-  nodeG.innerHTML = '';
-  nodes.forEach(n => {
-    let visible = n.tag.includes(currentFilter);
-    if (currentFilter === 'roadmap') {
-      visible = FIXES[n.id] || KNOWN_BUGS[n.id];
-    }
-    
-    const isDimmed = activeNode && activeNode !== n.id && !edges.some(e => (e.from === activeNode && e.to === n.id) || (e.to === activeNode && e.from === n.id));
-    
-    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-    g.className = `node ${n.critical ? 'critical' : ''} ${isDimmed ? 'dimmed-node' : ''}`;
-    if (!visible && currentFilter !== 'all') g.style.display = 'none';
-    
-    g.innerHTML = `
-      <rect x="${n.x}" y="${n.y}" width="${n.w}" height="${n.h}" fill="var(--panel)" stroke="${n.color}"></rect>
-      <text x="${n.x + 12}" y="${n.y + 22}" class="label">${n.label}</text>
-      <text x="${n.x + 12}" y="${n.y + 38}" class="sub">${n.sub}</text>
-    `;
-    
-    let bx = n.x + n.w - 12;
-    if (FIXES[n.id]) {
-      g.innerHTML += `
-        <circle cx="${bx}" cy="${n.y + 12}" r="8" class="badge-fix"></circle>
-        <text x="${bx}" y="${n.y + 12}" class="badge-text">${FIXES[n.id].length}</text>
-      `;
-      bx -= 20;
-    }
-    if (KNOWN_BUGS[n.id]) {
-      g.innerHTML += `
-        <circle cx="${bx}" cy="${n.y + 12}" r="8" class="badge-bug"></circle>
-        <text x="${bx}" y="${n.y + 12}" class="badge-text">${KNOWN_BUGS[n.id].length}</text>
-      `;
-    }
-    
-    g.onclick = (e) => {
-      e.stopPropagation();
-      activeNode = activeNode === n.id ? null : n.id;
-      render();
-    };
-    
-    nodeG.appendChild(g);
-  });
+  const bugs = KNOWN_BUGS[id] || [];
+  const fixes = FIXES[id] || [];
+
+  sidebar.innerHTML = `
+    <h2>${n.label}</h2>
+    <div class="path">${n.path || ''}</div>
+    <div class="role">${n.role || ''}</div>
+    <div class="plain-box"><span class="lbl">En clair</span>${n.plain || ''}</div>
+    ${n.notes && n.notes.length ? `<ul class="notes">${n.notes.map(x => `<li>${x}</li>`).join('')}</ul>` : ''}
+    ${outgoing.length ? `<h3 class="section">Sort vers (${outgoing.length})</h3>${outgoing.map(e => `
+      <div class="edge-row"><span>${nodeById[e.to]?.label || e.to}</span><span class="arrow">${e.label || ''} →</span></div>`).join('')}` : ''}
+    ${incoming.length ? `<h3 class="section">Reçoit de (${incoming.length})</h3>${incoming.map(e => `
+      <div class="edge-row"><span class="arrow">← ${e.label || ''}</span><span>${nodeById[e.from]?.label || e.from}</span></div>`).join('')}` : ''}
+    ${bugs.length ? `<h3 class="section">Bugs connus</h3>${bugs.map(b => `
+      <div class="bug-row"><span class="sev sev-${b.sev}">${b.sev}</span>${b.t}${b.ref ? `<div style="color:var(--muted); margin-top:4px; font-family:monospace; font-size:10.5px;">${b.ref}</div>` : ''}</div>`).join('')}` : ''}
+    ${fixes.length ? `<h3 class="section">Fixes documentés</h3>${fixes.map(f => `
+      <div class="fix-row">#${f.n} — ${f.t}</div>`).join('')}` : ''}
+  `;
 }
 
-// 4. Sidebar Logic
-function renderSidebar() {
-  if (activeNode) {
-    const n = nodes.find(x => x.id === activeNode);
-    let html = `
-      <h2>${n.label}</h2>
-      <div class="sb-path">${n.path}</div>
-      
-      <div class="sb-section">
-        <div class="sb-title">Technical Role</div>
-        <div>${n.role}</div>
-      </div>
-      
-      <div class="sb-section">
-        <div class="sb-title">Plain English</div>
-        <div>${n.plain}</div>
-      </div>
-      
-      <div class="sb-section">
-        <div class="sb-title">Implementation Notes</div>
-        <ul>${n.notes.map(x => `<li>${x}</li>`).join('')}</ul>
-      </div>
-    `;
-    
-    if (FIXES[n.id] || KNOWN_BUGS[n.id]) {
-      html += `<div class="sb-section"><div class="sb-title">Roadmap & Fixes</div>`;
-      if (KNOWN_BUGS[n.id]) {
-        KNOWN_BUGS[n.id].forEach(b => {
-          html += `<div class="bug-item"><strong>BUG (${b.sev}):</strong> ${b.t}<br><small>${b.ref}</small></div>`;
-        });
-      }
-      if (FIXES[n.id]) {
-        FIXES[n.id].forEach(f => {
-          html += `<div class="fix-item"><strong>FIX:</strong> ${f.t}</div>`;
-        });
-      }
-      html += `</div>`;
-    }
-    
-    sidebar.innerHTML = html;
-  } else {
-    sidebar.innerHTML = `
-      <h2>Architecture Overview</h2>
-      <p>This map documents the <strong>Edoc Soummam</strong> dynamic forms architecture, tracing how a JSON schema becomes a React form and is ultimately saved into a dynamically constructed MySQL table.</p>
-      
-      <div class="sb-section">
-        <div class="sb-title">Notable findings from this map</div>
-        <ul>
-          <li><strong>Dead Code Located:</strong> <code>updateFields</code> in <code>definitionService.js</code> has zero callers and appears to be abandoned.</li>
-          <li><strong>Clever Architectural Seam:</strong> The flattening of nested JSON objects (e.g., <code>periode: { dateDebut }</code> -> <code>periode_dateDebut</code>) happens in two completely isolated places (FormEngine and DefinitionService) using identical underscore logic. This keeps the schema in sync with the database columns automatically without a complex mapping layer!</li>
-          <li><strong>Critical Vulnerability Fixed:</strong> The dynamic SQL builder in <code>DataService.java</code> now uses backticks (<code>\`\`</code>) for column names, preventing crashes when users define forms with standard SQL reserved words (like "date" or "desc").</li>
-          <li><strong>Resilient Error Handling:</strong> The HTTP 400 response from <code>FormDataController</code> now includes detailed SQL error data which the frontend parser reads, replacing cryptic 500 crashes with actionable UI messages.</li>
-          <li><strong>Master-Detail Merge:</strong> The system successfully handles a master-detail split (<code>t_document</code> vs <code>doc_xxx</code>) dynamically.</li>
-        </ul>
-      </div>
-      <p style="color: var(--muted); font-size: 12px; margin-top: 30px;">Click any node to see its details and highlight its connections. Drag the background to pan, use mouse wheel to zoom.</p>
-    `;
+function applySelectionDimming() {
+  if (!selectedId) {
+    Object.values(nodeEls).forEach(g => g.classList.remove('dimmed'));
+    edgeEls.forEach(({ path, label }) => { path.classList.remove('dimmed'); label.classList.remove('dimmed'); });
+    applyFilter();
+    return;
   }
+  const connected = new Set([selectedId]);
+  edges.forEach(e => {
+    if (e.from === selectedId) connected.add(e.to);
+    if (e.to === selectedId) connected.add(e.from);
+  });
+  nodes.forEach(n => nodeEls[n.id].classList.toggle('dimmed', !connected.has(n.id)));
+  edgeEls.forEach(({ e, path, label }) => {
+    const show = e.from === selectedId || e.to === selectedId;
+    path.classList.toggle('dimmed', !show);
+    label.classList.toggle('dimmed', !show);
+  });
 }
 
-// 5. Toolbar & Filter Logic
-const allTags = new Set();
-nodes.forEach(n => n.tag.forEach(t => allTags.add(t)));
-edges.forEach(e => e.tag.forEach(t => allTags.add(t)));
+function hoverNode(id) {
+  if (!id) { applySelectionDimming(); return; }
+  const connected = new Set([id]);
+  edges.forEach(e => {
+    if (e.from === id) connected.add(e.to);
+    if (e.to === id) connected.add(e.from);
+  });
+  nodes.forEach(n => nodeEls[n.id].classList.toggle('dimmed', !connected.has(n.id)));
+}
 
-const toolbar = document.getElementById('toolbar');
-const sortedTags = ['overview', 'critical', 'forms', 'admin', 'all', 'roadmap'];
-
-sortedTags.forEach(t => {
-  if (t !== 'roadmap' && !allTags.has(t)) return;
-  const chip = document.createElement('div');
-  chip.className = `chip ${currentFilter === t ? 'active' : ''}`;
-  chip.textContent = t.toUpperCase();
-  chip.onclick = () => {
-    currentFilter = t;
-    activeNode = null;
-    document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-    chip.classList.add('active');
-    render();
-  };
-  toolbar.appendChild(chip);
+document.getElementById('canvas-wrap').addEventListener('click', () => {
+  selectedId = null;
+  applySelectionDimming();
+  renderDefaultSidebar();
 });
+renderDefaultSidebar();
 
-function render() {
-  drawNodes();
-  drawEdges();
-  renderSidebar();
-}
+// ===========================================================================
+// PAN + ZOOM
+// ===========================================================================
+const wrap = document.getElementById('canvas-wrap');
+let scale = 1, tx = 0, ty = 0;
+let isPanning = false, panStart = { x: 0, y: 0 }, txStart = 0, tyStart = 0;
 
-svg.onclick = () => {
-  activeNode = null;
-  render();
-};
-
-// 6. Pan & Zoom Logic
-let tx = 0, ty = 0, scale = 1;
-let isDragging = false, startX, startY;
-
-function updateTransform() {
-  viewport.setAttribute('transform', `translate(${tx}, ${ty}) scale(${scale})`);
+function applyTransform() {
+  svg.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
+  svg.style.transformOrigin = '0 0';
 }
 
 function fitToScreen() {
-  const containerW = svg.clientWidth || (window.innerWidth - 350);
-  const containerH = svg.clientHeight || window.innerHeight;
-  scale = Math.min(containerW / 1850, containerH / 650, 0.95);
-  scale = Math.max(scale, 0.4);
-  tx = 20;
-  ty = 40;
-  updateTransform();
+  const rect = wrap.getBoundingClientRect();
+  const sx = rect.width / CANVAS_W, sy = rect.height / CANVAS_H;
+  scale = Math.min(sx, sy) * 0.94;
+  tx = (rect.width - CANVAS_W * scale) / 2;
+  ty = (rect.height - CANVAS_H * scale) / 2;
+  applyTransform();
 }
 
-svg.onmousedown = e => {
-  if (e.target.closest('.node')) return;
-  isDragging = true;
-  startX = e.clientX - tx;
-  startY = e.clientY - ty;
-};
+wrap.addEventListener('mousedown', (e) => {
+  isPanning = true;
+  wrap.classList.add('dragging');
+  panStart = { x: e.clientX, y: e.clientY };
+  txStart = tx; tyStart = ty;
+});
+window.addEventListener('mousemove', (e) => {
+  if (!isPanning) return;
+  tx = txStart + (e.clientX - panStart.x);
+  ty = tyStart + (e.clientY - panStart.y);
+  applyTransform();
+});
+window.addEventListener('mouseup', () => { isPanning = false; wrap.classList.remove('dragging'); });
 
-window.onmousemove = e => {
-  if (!isDragging) return;
-  tx = e.clientX - startX;
-  ty = e.clientY - startY;
-  updateTransform();
-};
-
-window.onmouseup = () => isDragging = false;
-
-svg.onwheel = e => {
+wrap.addEventListener('wheel', (e) => {
   e.preventDefault();
-  const ds = e.deltaY > 0 ? 0.9 : 1.1;
-  const rect = svg.getBoundingClientRect();
-  const cx = e.clientX - rect.left;
-  const cy = e.clientY - rect.top;
-  
-  tx = cx - (cx - tx) * ds;
-  ty = cy - (cy - ty) * ds;
-  scale *= ds;
-  updateTransform();
-};
+  const rect = wrap.getBoundingClientRect();
+  const cx = e.clientX - rect.left, cy = e.clientY - rect.top;
+  const worldX = (cx - tx) / scale, worldY = (cy - ty) / scale;
+  const delta = e.deltaY > 0 ? 0.9 : 1.1;
+  scale = Math.min(3, Math.max(0.2, scale * delta));
+  tx = cx - worldX * scale;
+  ty = cy - worldY * scale;
+  applyTransform();
+}, { passive: false });
 
-document.getElementById('btn-in').onclick = () => { scale *= 1.2; updateTransform(); };
-document.getElementById('btn-out').onclick = () => { scale *= 0.8; updateTransform(); };
-document.getElementById('btn-fit').onclick = fitToScreen;
+document.getElementById('zoom-in').addEventListener('click', () => { scale = Math.min(3, scale * 1.2); applyTransform(); });
+document.getElementById('zoom-out').addEventListener('click', () => { scale = Math.max(0.2, scale * 0.8); applyTransform(); });
+document.getElementById('zoom-fit').addEventListener('click', fitToScreen);
 
-// Initial setup
 window.addEventListener('resize', fitToScreen);
-setTimeout(() => {
-  fitToScreen();
-  render();
-}, 50);
+setTimeout(fitToScreen, 30);
 </script>
 </body>
 </html>
