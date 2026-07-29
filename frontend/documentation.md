@@ -4,30 +4,58 @@ Cette documentation de niveau architecture (Senior Engineer) présente la struct
 
 ---
 
+# 📄 Documentation Technique — Front-End (React) & Form Engine
+
+Cette documentation de niveau architecture (Senior Engineer) présente la structure globale, les concepts clés, le fonctionnement du moteur de formulaires dynamiques (Form Engine) et intègre les dernières modifications (Mode Consultation, Normalisation de casse).
+
+---
+
 ## 1. Vue d'Ensemble & Architecture Composants
 
 L'application Front-End est une SPA (Single Page Application) React propulsée par Vite. Elle est structurée selon une approche **orientée fonctionnalités (features)**.
 
 ```mermaid
-graph TD
-    subgraph Frontend [Frontend React]
-        Router[React Router]
-        Router --> DL[DocumentsList.jsx]
-        Router --> DVM[DocumentViewPage.jsx<br/>(Consultation)]
-        Router --> DTM[DocumentTypeManager.jsx<br/>(Admin)]
+flowchart TD
+    classDef router fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:#0d47a1;
+    classDef pages fill:#fff3e0,stroke:#ef6c00,stroke-width:2px,color:#e65100;
+    classDef engine fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,color:#1b5e20;
+    classDef subEngine fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#4a148c;
+    classDef service fill:#fffde7,stroke:#fbc02d,stroke-width:2px,color:#f57f17;
+    classDef backend fill:#efebe9,stroke:#4e342e,stroke-width:2px,color:#3e2723;
+
+    subgraph FRONTEND ["🎨 Frontend React (Vite SPA)"]
+        Router["🌐 React Router"]:::router
         
-        DL --> |Navigation onClick| DVM
-        DVM --> |Initialise & Injecte Data| FE[FormEngine (index.jsx)]
-        FE --> |Aplatissement & Normalisation| Parser[jsonParser.ts]
-        FE --> |Rendu Adaptatif| FR[render.jsx (FieldRenderer)]
+        subgraph PAGES ["📌 Pages & Vues Principales"]
+            DVM["👁️ DocumentViewPage.jsx<br/>(Mode Consultation)"]:::pages
+            DTM["⚙️ DocumentTypeManager.jsx<br/>(Administration)"]:::pages
+        end
         
-        FE --> |Requêtes REST| Svc[formDataService.js]
+        subgraph CORE ["🧩 Form Engine Core"]
+            FE["🔥 FormEngine (index.jsx)"]:::engine
+            Parser["⚡ jsonParser.ts<br/>(Aplatissement & Normalisation)"]:::subEngine
+            FR["🎨 render.jsx<br/>(FieldRenderer Adaptatif)"]:::subEngine
+        end
+        
+        Svc["📡 formDataService.js"]:::service
     end
+
+    subgraph BACKEND ["⚙️ API REST Backend"]
+        API["🚀 Spring Boot Endpoints"]:::backend
+    end
+
+    %% Interconnections
+    Router --> DVM
+    Router --> DTM
     
-    subgraph Backend [API REST]
-        Svc --> |POST / GET| API[Spring Boot Endpoints]
-    end
-```
+    DVM -->|"Initialise & Injecte Data"| FE
+    DTM -->|"Configuration Schéma JSON"| FE
+    
+    FE -->|"Parsing & Traitement Schéma"| Parser
+    FE -->|"Rendu Dynamique UI"| FR
+    FE -->|"Requêtes REST"| Svc
+    
+    Svc -->|"POST / GET / PUT"| API
 
 ### Concepts Clés
 1. **Pilotage par les données (Data-Driven)** : L'UI n'est pas codée en dur. Les formulaires sont générés dynamiquement à partir de fichiers `.json` (JSON Schema) stockés dans `/public/schema/`.
