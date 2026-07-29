@@ -76,7 +76,13 @@ function DocumentViewPage() {
   }, [tableName, id]);
 
   const handleBackToList = () => {
-    navigate(`/documents?type=${tableName}`);
+    // Si l'utilisateur a un historique dans l'application, on fait un retour en arrière
+    if (window.history.length > 2) {
+      navigate(-1);
+    } else {
+      // Fallback au cas où l'utilisateur a ouvert le lien directement dans un nouvel onglet
+      navigate(`/documents?type=${tableName}`);
+    }
   };
 
   return (

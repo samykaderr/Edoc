@@ -4,7 +4,6 @@ import Dashboard from './pages/Dashboard';
 import CreateForm from './pages/CreateForm';
 import ViewForm from './pages/ViewForm';
 import DocumentViewPage from './pages/DocumentViewPage';
-import DocumentsList from './pages/DocumentsList';
 import './components/Layout/Layout.css';
 import './components/Sidebar/Sidebar.css';
 import './components/TopNav/TopNav.css';
@@ -21,7 +20,6 @@ function App() {
         <Route element={<Layout />}>
           <Route path='/document-manager/:schemaName' element={<DocumentTypeManager />} />
           <Route path="/" element={<Dashboard />} />
-          <Route path="/documents" element={<DocumentsList />} />
           <Route path="/create" element={<CreateForm />} />
           <Route path="/view/:tableName/:id" element={<DocumentViewPage />} />
           <Route path="/view/:schemaName" element={<ViewForm />} />

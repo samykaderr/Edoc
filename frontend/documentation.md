@@ -1,133 +1,104 @@
-# Documentation Technique — Front-End & Form Engine (Edoc-Soummam)
+# Documentation Technique — Front-End (React) & Form Engine
 
-Cette documentation présente l'architecture globale, la gestion des styles (CSS modulaire), le fonctionnement détaillé du moteur de formulaires dynamiques (Form Engine), les mécanismes de validation ainsi que les points clés d'extension et de modification du projet.
-
----
-
-## 1. Architecture Globale du Front-End
-
-L'application est structurée selon une approche **orientée fonctionnalités (features)** et **composants autonomes**. 
-Elle s'articule principalement autour :
-1. **Des Vues / Pages (`src/pages/`)** : Conteneurs de pages principaux (Dashboard, DocumentsList, CreateForm, ViewForm).
-2. **Du Layout et de la Navigation (`src/components/`)** : Composants d'infrastructure (`Layout`, `Sidebar`, `TopNav`).
-3. **Du Form Engine (`src/features/form-engine/`)** : Moteur de rendu et de validation dynamique basé sur le standard **JSON Schema**.
-4. **Des Services d'API (`src/services/api.js`)** : Point de communication unique via Axios.
+Cette documentation de niveau architecture (Senior Engineer) présente la structure globale, les concepts clés, le fonctionnement du moteur de formulaires dynamiques (Form Engine) et intègre les dernières modifications (Mode Consultation, Normalisation de casse).
 
 ---
 
-## 2. Système de Styles & Architecture CSS Modulaire
+## 1. Vue d'Ensemble & Architecture Composants
 
-Le style de l'application a été récemment découpé pour abandonner le fichier monolithique `App.css` au profit d'une **architecture CSS par composant**. Chaque fichier CSS est importé au niveau de son composant ou de `App.jsx`.
-
-### Structure des fichiers CSS
-* **[`src/index.css`](file:///c:/Users/user/OneDrive/Bureau/Edoc-soummam/frontend/src/index.css)** : 
-  * *Rôle* : Initialisation globale minimale (Reset CSS standard).
-  * *Contenu* : Remise à zéro des marges du `body` et verrouillage du défilement (`overflow: hidden`) pour garantir un affichage plein écran.
-* **[`src/components/Layout/Layout.css`](file:///c:/Users/user/OneDrive/Bureau/Edoc-soummam/frontend/src/components/Layout/Layout.css)** :
-  * *Rôle* : Structure et squelette global de l'application (App Shell).
-  * *Composants liés* : Conteneur global, barre principale flexible (`display: flex`), wrapper de navigation et de défilement du contenu principal.
-* **[`src/components/Sidebar/Sidebar.css`](file:///c:/Users/user/OneDrive/Bureau/Edoc-soummam/frontend/src/components/Sidebar/Sidebar.css)** :
-  * *Rôle* : Barre latérale de navigation.
-  * *Styles* : Menu, logo, éléments de liste, états actifs (`.active`) et effets au survol (`:hover`).
-* **[`src/components/TopNav/TopNav.css`](file:///c:/Users/user/OneDrive/Bureau/Edoc-soummam/frontend/src/components/TopNav/TopNav.css)** :
-  * *Rôle* : Barre supérieure de l'application (Header).
-  * *Styles* : Avatar utilisateur, boutons d'action avec effets de transition fluides, titre dynamique.
-* **[`src/components/Dashboard/Dashboard.css`](file:///c:/Users/user/OneDrive/Bureau/Edoc-soummam/frontend/src/components/Dashboard/Dashboard.css)** :
-  * *Rôle* : Bannière d'accueil ("Hero Panel") et grilles de cartes.
-  * *Styles* : Dégradés HSL modernes, effet de flou (`backdrop-filter: blur`), grille adaptative `.cards-grid` (CSS Grid à 4 colonnes), cartes réactives `.document-card` avec ombres portées et micro-animations lors du survol.
-* **[`src/components/FormRenderer/FormRenderer.css`](file:///c:/Users/user/OneDrive/Bureau/Edoc-soummam/frontend/src/components/FormRenderer/FormRenderer.css)** :
-  * *Rôle* : Rendu visuel complet des formulaires et de ses éléments interactifs.
-  * *Styles critiques* :
-    * La grille `.form-grid` (Layout CSS Grid à 2 colonnes par défaut).
-    * La gestion réactive de `.form-field.half-width` qui repasse en pleine largeur sur mobile (`@media (max-width: 600px)`).
-    * Personnalisation ergonomique de l'icône de sélection de date (`input[type="date"]::-webkit-calendar-picker-indicator`) avec filtres CSS colorés et transitions.
-    * États visuels des champs : erreur (`.input-error`), libellés (`.form-field-label`), astérisques de champs requis (`.form-field-required`).
-* **[`src/components/Shared/EmployeeLookup.css`](file:///c:/Users/user/OneDrive/Bureau/Edoc-soummam/frontend/src/components/Shared/EmployeeLookup.css)** :
-  * *Rôle* : Styles du module de recherche d'employés.
-  * *Styles* : Spinner d'attente animé (`@keyframes spin`), badge de succès vert (`.employe-found-badge`), alignement du bouton de recherche.
-* **[`src/components/Shared/Skeleton.css`](file:///c:/Users/user/OneDrive/Bureau/Edoc-soummam/frontend/src/components/Shared/Skeleton.css)** :
-  * *Rôle* : Effets visuels de chargement.
-  * *Styles* : Animation de balayage brillant (`@keyframes skeleton-shimmer`) appliquée sur les squelettes de texte, boutons et inputs.
-
----
-
-## 3. Le Moteur de Formulaire Dynamique (Form Engine)
-
-Le moteur génère dynamiquement des formulaires React interactifs à partir de définitions de schémas JSON standardisés.
-
-### Flux de données et d'interprétation
+L'application Front-End est une SPA (Single Page Application) React propulsée par Vite. Elle est structurée selon une approche **orientée fonctionnalités (features)**.
 
 ```mermaid
 graph TD
-    A[Schéma JSON brut] --> B[JsonParser.ts : parse]
-    B --> C[Génération de l'état initial : getInitialValue]
-    C --> D[Orchestrateur FormEngine : index.jsx]
-    D --> E[Interprétation du Type : getFieldControl]
-    E --> F[Rendu dynamique : FieldRenderer]
+    subgraph Frontend [Frontend React]
+        Router[React Router]
+        Router --> DL[DocumentsList.jsx]
+        Router --> DVM[DocumentViewPage.jsx<br/>(Consultation)]
+        Router --> DTM[DocumentTypeManager.jsx<br/>(Admin)]
+        
+        DL --> |Navigation onClick| DVM
+        DVM --> |Initialise & Injecte Data| FE[FormEngine (index.jsx)]
+        FE --> |Aplatissement & Normalisation| Parser[jsonParser.ts]
+        FE --> |Rendu Adaptatif| FR[render.jsx (FieldRenderer)]
+        
+        FE --> |Requêtes REST| Svc[formDataService.js]
+    end
+    
+    subgraph Backend [API REST]
+        Svc --> |POST / GET| API[Spring Boot Endpoints]
+    end
 ```
 
-### Modules et Rôles
-
-#### 1. L'Orchestrateur : [`index.jsx`](file:///c:/Users/user/OneDrive/Bureau/Edoc-soummam/frontend/src/features/form-engine/form-renderer/index.jsx)
-* Reçoit le schéma JSON (en chaîne de caractères ou objet) et un callback `onSubmit`.
-* Gère l'état global du formulaire (`formData`), les erreurs de validation (`errors`) et l'état d'envoi (`isSubmitting`).
-* Permet d'injecter des champs additionnels statiques ou requis par l'expérience métier (ex: le champ `"Numéro DOC"` lié à la clé `num_doc`).
-* Prépare le `payload` en typant correctement les données (conversion en entier pour `integer`, réel pour `number` et booléen pour `boolean`) avant l'envoi.
-
-#### 2. Le Parser : [`jsonParser.ts`](file:///c:/Users/user/OneDrive/Bureau/Edoc-soummam/frontend/src/features/form-engine/parser/jsonParser.ts)
-* Valide la structure du fichier JSON schema (présence obligatoire de `properties`).
-* Implémente la conversion du schéma JSON en payload MySQL (`toMysqlPayload`) pour automatiser la création des tables de base de données en fonction des champs du formulaire. Il mappe les types JSON aux types SQL (`DATE`, `VARCHAR`, `INTEGER`, etc.) en respectant les exigences `nullable` tirées du tableau `required`.
-
-#### 3. Le Registre des Contrôles : [`register/index.js`](file:///c:/Users/user/OneDrive/Bureau/Edoc-soummam/frontend/src/features/form-engine/register/index.js)
-* Détermine le composant HTML à utiliser en appliquant des règles ordonnées (Pattern de Chaîne de Responsabilité) :
-  * Liste à choix multiple (`enum` / `oneOf`) $\rightarrow$ `<select>`
-  * Format de date ou nom contenant "date" $\rightarrow$ `<input type="date">`
-  * Booléen $\rightarrow$ `<input type="checkbox">`
-  * Entier ou Décimal $\rightarrow$ `<input type="number">`
-  * Texte long (`maxLength > 120`) $\rightarrow$ `<textarea>`
-  * Autre $\rightarrow$ `<input type="text">` (standard)
-
-#### 4. Le Moteur de Rendu : [`render.jsx`](file:///c:/Users/user/OneDrive/Bureau/Edoc-soummam/frontend/src/features/form-engine/form-renderer/render.jsx)
-* **`FieldRenderer`** : Reçoit le type de contrôle déterminé par le registre et génère la structure HTML/React correspondante. Il intègre directement les attributs de validation (`minLength`, `maxLength`, `min` pour les dates, etc.).
+### Concepts Clés
+1. **Pilotage par les données (Data-Driven)** : L'UI n'est pas codée en dur. Les formulaires sont générés dynamiquement à partir de fichiers `.json` (JSON Schema) stockés dans `/public/schema/`.
+2. **Couplage lâche** : Le composant de rendu (`FieldRenderer`) ne connaît pas la logique métier, il se contente d'afficher un contrôle (input, select) selon les instructions de l'orchestrateur (`FormEngine`).
+3. **Architecture CSS Modulaire** : Chaque composant possède son propre fichier `.css` (ex: `FormRenderer.css`, `Sidebar.css`), abandonnant ainsi le modèle monolithique.
 
 ---
 
-## 4. Système de Validation & Évaluation des Expressions
+## 2. Le Moteur de Formulaire (Form Engine)
 
-La validation combine deux aspects : des règles basées sur le schéma et des validations inter-champs plus complexes.
+Le cœur de l'application réside dans `src/features/form-engine/`. Ce moteur transforme un Schéma JSON en un formulaire interactif, gère l'état, valide les saisies et prépare le payload pour l'API.
 
-### Validations des Champs : [`validator/index.js`](file:///c:/Users/user/OneDrive/Bureau/Edoc-soummam/frontend/src/features/form-engine/validator/index.js)
-* **`validateField`** : Analyse unitaire d'une valeur.
-  * Valide l'obligation de saisie (`isRequired`).
-  * Valide les types numériques (`integer` : vérification que le nombre est entier).
-  * Valide les longueurs minimales/maximales (`minLength` / `maxLength`).
-  * Valide les expressions régulières (`pattern`).
-* **`buildFormErrors`** : Construit la carte complète des erreurs de validation du formulaire.
-  * Boucle sur tous les champs de la définition pour lever les erreurs.
-  * Réalise des validations métier inter-champs, notamment en vérifiant que la date de début n'est pas postérieure à la date de fin :
-    $$\text{dateDebut} \le \text{dateFin}$$
+### A. Flux de Création et de Consultation (Diagramme de Séquence)
 
-### Évaluateur d'Expressions Conditionnelles : [`expression-evaluator/index.js`](file:///c:/Users/user/OneDrive/Bureau/Edoc-soummam/frontend/src/features/form-engine/expression-evaluator/index.js)
-* **`buildRequiredFields`** : Analyse dynamiquement les dépendances du formulaire via les structures standardisées `allOf / if / then`.
-  * Si un champ du formulaire correspond à la condition définie dans le bloc `if` (ex: `natureDoc === 'CONTRAT'`), alors les champs spécifiés dans le bloc `then` de la règle (ex: `dateFin`) deviennent requis de manière dynamique à l'écran.
+Voici le cycle de vie complet de la donnée, depuis le clic utilisateur jusqu'à la persistance en base de données, incluant le flux de consultation récemment ajouté.
+
+```mermaid
+sequenceDiagram
+    participant U as Utilisateur
+    participant F as React Frontend (FormEngine)
+    participant C as DataController
+    participant S as DataService
+    participant R as DataRepository
+    participant DB as MySQL
+
+    Note over U,DB: Flux 1 : Création d'un document
+    U->>F: Remplit et soumet le formulaire
+    F->>F: Validation métier & Aplatissement (camelCase -> underscore)
+    F->>C: POST /api/v1/form-data/{tableName}
+    C->>S: insert(tableName, payload)
+    S->>R: insertMasterDocument() -> t_document
+    R-->>S: document_id généré
+    S->>S: Injecte document_id dans le payload
+    S->>R: insertDynamic() -> table spécifique
+    R->>DB: INSERT INTO {tableName}
+    DB-->>C: 201 Created
+    C-->>F: Succès
+
+    Note over U,DB: Flux 2 : Consultation (Lecture Seule)
+    U->>F: Clique sur l'icône "œil" depuis le tableau
+    F->>F: navigate('/view/{tableName}/{id}')
+    F->>C: GET /api/v1/form-data/{tableName}/{id}
+    C->>DB: SELECT * FROM {tableName} WHERE id = ?
+    DB-->>F: Ligne JSON (Clés SQL en minuscules)
+    F->>F: Normalisation pathToSchemaKey (minuscule -> camelCase)
+    F->>U: Affiche Formulaire (globalReadOnly=true)
+```
+
+### B. Mode Consultation & Normalisation de Casse (Nouveauté)
+
+Lorsqu'un utilisateur souhaite consulter un document existant (via `DocumentViewPage.jsx`), le composant active le mode **Lecture Seule**.
+
+1. **`globalReadOnly`** : Le paramètre `globalReadOnly={true}` est passé à `<FormRenderer />`.
+   - Il désactive la soumission.
+   - Il masque le bouton de validation.
+   - Il propage la propriété `disabled={true}` à **tous** les contrôles gérés par `render.jsx`.
+   - Il sécurise l'affichage des `<select>` en forçant un affichage type `<input type="text">` pour éviter que le dropdown ne semble interactif.
+2. **Normalisation via `pathToSchemaKey`** :
+   - Problème : La BDD MySQL renvoie des clés de colonnes en minuscules (`datedebut`, `motif`), mais le JSON Schema original s'attend à du CamelCase (`dateDebut`, `motif`).
+   - Solution : Lors de la synchronisation de `initialData` (dans `index.jsx`), un dictionnaire de correspondance dynamique est construit. Il parcourt le schéma JSON résolu et associe chaque chemin minuscule à sa véritable casse originale. Le payload reçu de l'API est ainsi "reconstruit" avant d'être injecté dans le state React.
+
+### C. Validation & Évaluation des Expressions
+
+- **Validation Structurelle (`validator/index.js`)** : Vérifie le type (entier, décimal), la présence (champs requis), la longueur (`maxLength`, `minLength`), et les expressions régulières (`pattern`). Intègre également des validations métier inter-champs (ex: `dateDebut <= dateFin`).
+- **Évaluation Dynamique (`expression-evaluator/index.js`)** : Déclenche l'affichage ou l'obligation de certains champs basés sur les saisies de l'utilisateur (via les blocs `allOf / if / then` du JSON Schema).
 
 ---
 
-## 5. Guide de Modification et d'Extension
+## 3. Interaction avec l'API & Gestion des Erreurs
 
-Voici où apporter vos modifications selon vos besoins de développement futurs :
+Les appels vers le backend Spring Boot sont centralisés dans `formDataService.js`.
 
-### A. Ajouter un nouveau type d'input ou comportement graphique
-1. **Modifier** [`register/index.js`](file:///c:/Users/user/OneDrive/Bureau/Edoc-soummam/frontend/src/features/form-engine/register/index.js) pour ajouter une règle de détection automatique dans la whitelist `FIELD_RULES`.
-2. **Ajouter** le cas d'affichage correspondant dans le `switch` du composant `FieldRenderer` dans [`render.jsx`](file:///c:/Users/user/OneDrive/Bureau/Edoc-soummam/frontend/src/features/form-engine/form-renderer/render.jsx).
-3. **Définir** ses styles spécifiques dans [`FormRenderer.css`](file:///c:/Users/user/OneDrive/Bureau/Edoc-soummam/frontend/src/components/FormRenderer/FormRenderer.css).
-
-### B. Ajouter ou modifier des règles de validation
-* **Validation d'un champ individuel** : Modifiez [`validateField` dans validator/index.js](file:///c:/Users/user/OneDrive/Bureau/Edoc-soummam/frontend/src/features/form-engine/validator/index.js#L15).
-* **Règle inter-champs ou métier globale** : Ajoutez votre code de comparaison logique dans [`buildFormErrors` dans validator/index.js](file:///c:/Users/user/OneDrive/Bureau/Edoc-soummam/frontend/src/features/form-engine/validator/index.js#L74).
-
-### C. Mettre à jour l'URI de l'API ou configurer les Endpoints
-* Pour modifier les requêtes Axios et ajouter de nouveaux endpoints de base de données ou de recherche, éditez [`src/services/api.js`](file:///c:/Users/user/OneDrive/Bureau/Edoc-soummam/frontend/src/services/api.js).
-
-### D. Ajuster la grille CSS (Layout)
-* Pour modifier l'affichage adaptatif des formulaires ou passer en structure à 3 colonnes, ajustez la directive `grid-template-columns` dans la classe `.form-grid` dans [`FormRenderer.css`](file:///c:/Users/user/OneDrive/Bureau/Edoc-soummam/frontend/src/components/FormRenderer/FormRenderer.css#L35).
+- **Interception des Erreurs SQL** : Le client frontend est conçu pour lire la structure d'erreur enrichie renvoyée par le backend. Si le serveur renvoie une `400 Bad Request` contenant un champ `details` (ex: `Unknown column 'test'`), l'interface l'affiche clairement à l'utilisateur, facilitant le débogage (surtout lors de la conception de nouveaux formulaires).
+- **Navigation Fiable** : Le bouton de visualisation (icône œil) dans `DocumentsList.jsx` extrait le `tableName` directement de l'objet ligne, garantissant une navigation correcte indépendamment de l'état des filtres du tableau.

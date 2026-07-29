@@ -159,7 +159,8 @@ function DocumentTypeManager() {
                                         <button
                                             title="Consulter"
                                             style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#5f6368' }}
-                                            onClick={() => navigate(`/view/${schemaName}`)}
+                                            // Transmettre l'ID du document (row.id, item.id ou doc.id selon le composant)
+                                            onClick={() => navigate(`/view/${schemaName}/${doc.id}`)}
                                         >
                                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>

@@ -25,7 +25,7 @@ public class DefinitionRepository {
      */
     public void executeCreateTable(String tableName) {
         String sql = String.format(
-                "CREATE TABLE IF NOT EXISTS %s (id INT PRIMARY KEY)",
+                "CREATE TABLE IF NOT EXISTS %s (id INT AUTO_INCREMENT PRIMARY KEY)",
                 tableName
         );
         jdbc.execute(sql);

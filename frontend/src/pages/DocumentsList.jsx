@@ -12,7 +12,7 @@ function DocumentsList() {
   const { documentTypes: schemas } = useDocuments();
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
-  // Bug #9 fix : Ajout d'un ├®tat d'erreur explicite au lieu du masquage par mockData
+  // Bug #9 fix : Ajout d'un etat d'erreur explicite au lieu du masquage par mockData
   const [fetchError, setFetchError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [documentType, setDocumentType] = useState(initialType);
