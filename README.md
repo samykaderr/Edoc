@@ -50,23 +50,42 @@
 ## 📐 Architecture & Flux de Données
 
 ```mermaid
-sequenceDiagram
-    autonumber
-    actor U as Utilisateur
-    participant FE as React Frontend (FormEngine)
-    participant API as DataController
-    participant SRV as DataService
-    participant REP as DataRepository
-    participant DB as MySQL (t_document & Table Dynamique)
+flowchart TD
+    classDef client fill:#e1f5fe,stroke:#0288d1,stroke-width:2px,color:#01579b;
+    classDef backend fill:#e8f5e9,stroke:#388e3c,stroke-width:2px,color:#1b5e20;
+    classDef ddl fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#e65100;
+    classDef db fill:#efebe9,stroke:#5d4037,stroke-width:2px,color:#3e2723;
 
-    U->>FE: Soumet le formulaire dynamique
-    FE->>API: POST /api/data/{tableName} (Payload JSON)
-    API->>SRV: insert(tableName, payload)
-    SRV->>REP: tableExists() & ensureColumnExists()
-    SRV->>REP: insertMasterDocument() dans t_document
-    REP-->>DB: INSERT INTO t_document (type_document, statut)
-    DB-->>REP: Retourne l'ID généré (generated_id)
-    SRV->>REP: insertDynamic() dans la table fille
-    REP-->>DB: INSERT INTO {tableName} (document_id, ...)
-    DB-->>SRV: Succès de la transaction
-    SRV-->>FE: HTTP 201 Created
+    subgraph CLIENT ["🎨 Frontend React"]
+        Form["📝 FormEngine Component"]:::client
+    end
+
+    subgraph BACKEND ["⚙️ Spring Boot Engine"]
+        API["🚀 DataController\n(POST /api/data/{table})"]:::backend
+        SRV["🛡️ DataService\n(@Transactional)"]:::backend
+        
+        subgraph ENGINE ["⚡ Dynamic DDL & Repository"]
+            DDL["🔍 DDL Check / Auto-Create"]:::ddl
+            REP["📦 DataRepository"]:::backend
+        end
+    end
+
+    subgraph STORAGE ["🛢️ MySQL Database"]
+        MasterDB[("📋 t_document\n(Table Master Centralisée)")]:::db
+        ChildDB[("📑 {tableName}\n(Table Fille Dynamique)")]:::db
+    end
+
+    %% Flux de données
+    Form -->|"1. Payload JSON"| API
+    API -->|"2. Process Transaction"| SRV
+    
+    SRV -->|"3. Auto-migration DDL"| DDL
+    DDL -.->|"CREATE / ALTER IF NOT EXISTS"| StorageCheck["Structure BDD"]
+    
+    SRV -->|"4. Insert Master"| REP
+    REP -->|"5. INSERT"| MasterDB
+    MasterDB -- "6. Return ID auto_increment" --> REP
+    
+    REP -->|"7. Insert Specific Data"| ChildDB
+    
+    SRV -.->|"8. HTTP 201 Created"| Form
