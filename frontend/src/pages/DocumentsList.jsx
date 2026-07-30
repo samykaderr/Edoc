@@ -27,12 +27,12 @@ function DocumentsList() {
         const response = await formDataService.all(tableToQuery);
         if (response && response.length > 0) {
           const mapped = response.map((item, index) => ({
-            id: item.id || `REQ-${1000 + index}`,
+            id: item.num_doc || item.numero_ordre || item.numero_demande || item.numDoc || (item.id ? `N° ${item.id}` : `REQ-${1000 + index}`),
             type: item.documentType || item.schemaName || 'Document générique',
             schemaName: item.schemaName || item.documentType || '',
             // tableName est toujours fiable car il vient directement de la requête
             tableName: tableToQuery,
-            date: item.createdAt ? new Date(item.createdAt).toISOString().split('T')[0] : item.created_at || '-',
+            date: item.createdAt ? new Date(item.createdAt).toISOString().split('T')[0] : (item.created_at || '-'),
             status: item.status || item.statut || 'Nouveau',
             originalId: item.id
           }));
@@ -42,7 +42,7 @@ function DocumentsList() {
         }
       } catch (error) {
         // Bug #9 fix : Affichage clair de l'erreur au lieu du retour silencieux sur mockData
-        console.error("Erreur de r├®cup├®ration des documents", error);
+        console.error("Erreur de recuperation des documents", error);
         setFetchError(`Impossible de charger les documents : ${error.message}`);
         setDocuments([]);
       } finally {

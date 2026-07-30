@@ -70,6 +70,46 @@ function DocumentTypeManager() {
         return rowContentString.includes(searchTerm.toLowerCase());
     });
 
+    // Helper pour formater la valeur d'une cellule avec tolérance de casse et gestion des objets imbriqués
+    const getFormattedCellValue = (doc, key, propertyDef) => {
+        if (!doc) return '-';
+
+        // 1. Recherche directe par clé exacte
+        if (doc[key] !== undefined && doc[key] !== null && doc[key] !== '') {
+            return formatVal(doc[key]);
+        }
+
+        // 2. Recherche insensible à la casse (ex: idemploye -> idEmploye)
+        const lowerKey = key.toLowerCase();
+        const matchedKey = Object.keys(doc).find(k => k.toLowerCase() === lowerKey);
+        if (matchedKey && doc[matchedKey] !== undefined && doc[matchedKey] !== null && doc[matchedKey] !== '') {
+            return formatVal(doc[matchedKey]);
+        }
+
+        // 3. Gestion des objets imbriqués (ex: groupe 'periode' -> periode_dateDebut et periode_dateFin)
+        if (propertyDef?.type === 'object' && propertyDef?.properties) {
+            const subKeys = Object.keys(propertyDef.properties);
+            const subValues = subKeys.map(subKey => {
+                const fullPathLower = `${key}_${subKey}`.toLowerCase();
+                const subLower = subKey.toLowerCase();
+                const foundKey = Object.keys(doc).find(k => k.toLowerCase() === fullPathLower || k.toLowerCase() === subLower);
+                return foundKey ? doc[foundKey] : null;
+            }).filter(v => v !== null && v !== '');
+
+            if (subValues.length > 0) {
+                return subValues.join(' au ');
+            }
+        }
+
+        return '-';
+    };
+
+    const formatVal = (val) => {
+        if (typeof val === 'boolean') return val ? 'Oui' : 'Non';
+        if (typeof val === 'object') return JSON.stringify(val);
+        return val.toString();
+    };
+
     return (
         <main className="app-shell desktop-only" style={{ padding: '2rem', height: '100%', overflowY: 'auto' }}>
 
@@ -120,7 +160,7 @@ function DocumentTypeManager() {
                 <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                     <thead style={{ backgroundColor: '#f8f9fa', borderBottom: '1px solid #dadce0' }}>
                         <tr>
-                            <th style={{ padding: '1rem', fontWeight: 600, fontSize: '0.875rem', color: '#202124', borderRight: '1px solid #dadce0' }}>ID</th>
+                            <th style={{ padding: '1rem', fontWeight: 600, fontSize: '0.875rem', color: '#202124', borderRight: '1px solid #dadce0' }}>N° Document</th>
 
                             {/* En-têtes de colonnes injectées dynamiquement depuis le JSON */}
                             {columnKeys.map((key) => (
@@ -145,13 +185,13 @@ function DocumentTypeManager() {
                             filteredDocs.map((doc, idx) => (
                                 <tr key={doc.id || idx} style={{ borderBottom: '1px solid #dadce0' }}>
                                     <td style={{ padding: '1rem', fontSize: '0.875rem', color: '#5f6368', borderRight: '1px solid #dadce0' }}>
-                                        {doc.id || `REQ-${1000 + idx}`}
+                                        {doc.num_doc || doc.numero_ordre || doc.numero_demande || doc.numDoc || `N° ${doc.id}`}
                                     </td>
 
                                     {/* Cellules dynamiques mappées sur les clés du schéma */}
                                     {columnKeys.map((key) => (
                                         <td key={key} style={{ padding: '1rem', fontSize: '0.875rem', color: '#202124', borderRight: '1px solid #dadce0' }}>
-                                            {typeof doc[key] === 'boolean' ? (doc[key] ? 'Oui' : 'Non') : (doc[key]?.toString() || '-')}
+                                            {getFormattedCellValue(doc, key, schemaProperties[key])}
                                         </td>
                                     ))}
 
